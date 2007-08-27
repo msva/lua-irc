@@ -1,0 +1,842 @@
+-- initialization {{{
+local base =      _G
+local constants = require 'irc.constants'
+local irc_debug = require 'irc.debug'
+local message =   require 'irc.message'
+local misc =      require 'irc.misc'
+local socket =    require 'socket'
+local os =        require 'os'
+local string =    require 'string'
+local table =     require 'table'
+-- }}}
+
+module 'irc'
+
+-- constants {{{
+_VERSION = 'LuaIRC 0.2'
+-- }}}
+
+-- classes {{{
+local Channel = base.require 'irc.channel'
+-- }}}
+
+-- local variables {{{
+local irc_sock = nil
+local rsockets = {}
+local wsockets = {}
+local rcallbacks = {}
+local wcallbacks = {}
+local icallbacks = {
+    whois = {},
+    serverversion = {},
+    servertime = {},
+    ctcp_ping = {},
+    ctcp_time = {},
+    ctcp_version = {},
+}
+local requestinfo = {whois = {}}
+local handlers = {}
+local ctcp_handlers = {}
+local serverinfo = {}
+-- }}}
+
+-- defaults {{{
+TIMEOUT = 60          -- connection timeout
+NETWORK = "localhost" -- default network
+PORT = 6667           -- default port
+NICK = "luabot"       -- default nick
+USERNAME = "LuaIRC"   -- default username
+REALNAME = "LuaIRC"   -- default realname
+DEBUG = false         -- whether we want extra debug information
+OUTFILE = nil         -- file to send debug output to - nil is stdout
+-- }}}
+
+-- private functions {{{
+-- main_loop_iter {{{
+local function main_loop_iter()
+    if #rsockets == 0 and #wsockets == 0 then return false end
+    local rready, wready, err = socket.select(rsockets, wsockets)
+    if err then irc_debug.err(err); return false; end
+
+    for _, sock in base.ipairs(rready) do
+        local cb = socket.protect(rcallbacks[sock])
+        local ret, err = cb(sock)
+        if not ret then
+            irc_debug.warn("socket error: " .. err)
+            _unregister_socket(sock, 'r')
+        end
+    end
+
+    for _, sock in base.ipairs(wready) do
+        local cb = socket.protect(wcallbacks[sock])
+        local ret, err = cb(sock)
+        if not ret then
+            irc_debug.warn("socket error: " .. err)
+            _unregister_socket(sock, 'w')
+        end
+    end
+
+    return true
+end
+-- }}}
+
+-- begin_main_loop {{{
+local function begin_main_loop()
+    while main_loop_iter() do end
+end
+-- }}}
+
+-- incoming_message {{{
+local function incoming_message(sock)
+    local raw_msg = socket.try(sock:receive())
+    irc_debug.message("RECV", raw_msg)
+    local msg = message.parse(raw_msg)
+    misc.try_call_warn("Unhandled server message: " .. msg.command,
+                       handlers["on_" .. msg.command:lower()],
+                       (misc.parse_user(msg.from)), base.unpack(msg.args))
+    return true
+end
+-- }}}
+-- }}}
+
+-- internal message handlers {{{
+-- command handlers {{{
+-- on_nick {{{
+function handlers.on_nick(from, new_nick)
+    for chan in channels() do
+        chan:change_nick(from, new_nick)
+    end
+    misc.try_call(on_nick_change, new_nick, from)
+end
+-- }}}
+
+-- on_join {{{
+function handlers.on_join(from, chan)
+    base.assert(serverinfo.channels[chan],
+                "Received join message for unknown channel: " .. chan)
+    if serverinfo.channels[chan].join_complete then
+        serverinfo.channels[chan]:add_user(from)
+        misc.try_call(on_join, serverinfo.channels[chan], from)
+    end
+end
+-- }}}
+
+-- on_part {{{
+function handlers.on_part(from, chan, part_msg)
+    -- don't assert on chan here, since we get part messages for ourselves
+    -- after we remove the channel from the channel list
+    if not serverinfo.channels[chan] then return end
+    if serverinfo.channels[chan].join_complete then
+        serverinfo.channels[chan]:remove_user(from)
+        misc.try_call(on_part, serverinfo.channels[chan], from, part_msg)
+    end
+end
+-- }}}
+
+-- on_mode {{{
+function handlers.on_mode(from, to, mode_string, ...)
+    local dir = mode_string:sub(1, 1)
+    mode_string = mode_string:sub(2)
+    local args = {...}
+
+    if to:sub(1, 1) == "#" then
+        -- handle channel mode requests {{{
+        base.assert(serverinfo.channels[to],
+                    "Received mode change for unknown channel: " .. to)
+        local chan = serverinfo.channels[to]
+        local ind = 1
+        for i = 1, mode_string:len() do
+            local mode = mode_string:sub(i, i)
+            local target = args[ind]
+            -- channel modes other than op/voice will be implemented as
+            -- information request commands
+            if mode == "o" then -- channel op {{{
+                chan:change_status(target, dir == "+", "o")
+                misc.try_call(({["+"] = on_op, ["-"] = on_deop})[dir],
+                              chan, from, target)
+                ind = ind + 1
+                -- }}}
+            elseif mode == "v" then -- voice {{{
+                chan:change_status(target, dir == "+", "v")
+                misc.try_call(({["+"] = on_voice, ["-"] = on_devoice})[dir],
+                              chan, from, target)
+                ind = ind + 1
+                -- }}}
+            end
+        end
+        -- }}}
+    elseif from == to then
+        -- handle user mode requests {{{
+        -- TODO: make users more easily accessible so this is actually
+        -- reasonably possible
+        for i = 1, mode_string:len() do
+            local mode = mode_string:sub(i, i)
+            if mode == "i" then -- invisible {{{
+                -- }}}
+            elseif mode == "s" then -- server messages {{{
+                -- }}}
+            elseif mode == "w" then -- wallops messages {{{
+                -- }}}
+            elseif mode == "o" then -- ircop {{{
+                -- }}}
+            end
+        end
+        -- }}}
+    end
+end
+-- }}}
+
+-- on_topic {{{
+function handlers.on_topic(from, chan, new_topic)
+    base.assert(serverinfo.channels[chan],
+                "Received topic message for unknown channel: " .. chan)
+    serverinfo.channels[chan]._topic.text = new_topic
+    serverinfo.channels[chan]._topic.user = (misc.parse_user(from))
+    serverinfo.channels[chan]._topic.time = os.time()
+    if serverinfo.channels[chan].join_complete then
+        misc.try_call(on_topic_change, serverinfo.channels[chan])
+    end
+end
+-- }}}
+
+-- on_invite {{{
+function handlers.on_invite(from, to, chan)
+    misc.try_call(on_invite, from, chan)
+end
+-- }}}
+
+-- on_kick {{{
+function handlers.on_kick(from, chan, to)
+    base.assert(serverinfo.channels[chan],
+                "Received kick message for unknown channel: " .. chan)
+    if serverinfo.channels[chan].join_complete then
+        serverinfo.channels[chan]:remove_user(to)
+        misc.try_call(on_kick, serverinfo.channels[chan], to, from)
+    end
+end
+-- }}}
+
+-- on_privmsg {{{
+function handlers.on_privmsg(from, to, msg)
+    local msgs = ctcp.ctcp_split(msg, true)
+    for _, v in base.ipairs(msgs) do
+        if base.type(v) == "string" then
+            -- normal message {{{
+            if to:sub(1, 1) == "#" then
+                base.assert(serverinfo.channels[to],
+                            "Received channel msg from unknown channel: " .. to)
+                misc.try_call(on_channel_msg, serverinfo.channels[to], from, v)
+            else
+                misc.try_call(on_private_msg, from, v)
+            end
+            -- }}}
+        elseif base.type(v) == "table" then
+            -- ctcp message {{{
+            local words = misc.split(v[1])
+            local received_command = words[1]
+            local cb = "on_" .. received_command:lower()
+            table.remove(words, 1)
+            -- not using try_call here because the ctcp specification requires
+            -- an error response to nonexistant commands
+            if base.type(ctcp_handlers[cb]) == "function" then
+                ctcp_handlers[cb](from, to, table.concat(words, " "))
+            else
+                notice(from, {"ERRMSG Unknown query: " .. received_command})
+            end
+            -- }}}
+        end
+    end
+end
+-- }}}
+
+-- on_notice {{{
+function handlers.on_notice(from, to, msg)
+    local msgs = ctcp.ctcp_split(msg, true)
+    for _, v in base.ipairs(msgs) do
+        if base.type(v) == "string" then
+            -- normal message {{{
+            if to:sub(1, 1) == "#" then
+                base.assert(serverinfo.channels[to],
+                            "Received channel msg from unknown channel: " .. to)
+                misc.try_call(on_channel_notice, serverinfo.channels[to],
+                              from, v)
+            else
+                misc.try_call(on_private_notice, from, v)
+            end
+            -- }}}
+        elseif base.type(v) == "table" then
+            -- ctcp message {{{
+            local words = misc.split(v[1])
+            local command = words[1]:lower()
+            table.remove(words, 1)
+            misc.try_call_warn("Unknown CTCP message: " .. command,
+                               ctcp_handlers["on_rpl_"..command], from, to,
+                               table.concat(words, ' '))
+            -- }}}
+        end
+    end
+end
+-- }}}
+
+-- on_quit {{{
+function handlers.on_quit(from, quit_msg)
+    for name, chan in base.pairs(serverinfo.channels) do
+        chan:remove_user(from)
+    end
+    misc.try_call(on_quit, from, quit_msg)
+end
+-- }}}
+
+-- on_ping {{{
+-- respond to server pings to make sure it knows we are alive
+function handlers.on_ping(from, respond_to)
+    send("PONG", respond_to)
+end
+-- }}}
+-- }}}
+
+-- server replies {{{
+-- on_rpl_topic {{{
+-- catch topic changes
+function handlers.on_rpl_topic(from, chan, topic)
+    base.assert(serverinfo.channels[chan],
+                "Received topic information about unknown channel: " .. chan)
+    serverinfo.channels[chan]._topic.text = topic
+end
+-- }}}
+
+-- on_rpl_notopic {{{
+function handlers.on_rpl_notopic(from, chan)
+    base.assert(serverinfo.channels[chan],
+                "Received topic information about unknown channel: " .. chan)
+    serverinfo.channels[chan]._topic.text = ""
+end
+-- }}}
+
+-- on_rpl_topicdate {{{
+-- "topic was set by <user> at <time>"
+function handlers.on_rpl_topicdate(from, chan, user, time)
+    base.assert(serverinfo.channels[chan],
+                "Received topic information about unknown channel: " .. chan)
+    serverinfo.channels[chan]._topic.user = user
+    serverinfo.channels[chan]._topic.time = base.tonumber(time)
+end
+-- }}}
+
+-- on_rpl_namreply {{{
+-- handles a NAMES reply
+function handlers.on_rpl_namreply(from, chanmode, chan, userlist)
+    base.assert(serverinfo.channels[chan],
+                "Received user information about unknown channel: " .. chan)
+    serverinfo.channels[chan]._chanmode = constants.chanmodes[chanmode]
+    local users = misc.split(userlist)
+    for k,v in base.ipairs(users) do
+        if v:sub(1, 1) == "@" or v:sub(1, 1) == "+" then
+            local nick = v:sub(2)
+            serverinfo.channels[chan]:add_user(nick, v:sub(1, 1))
+        else
+            serverinfo.channels[chan]:add_user(v)
+        end
+    end
+end
+-- }}}
+
+-- on_rpl_endofnames {{{
+-- when we get this message, the channel join has completed, so call the
+-- external cb
+function handlers.on_rpl_endofnames(from, chan)
+    base.assert(serverinfo.channels[chan],
+                "Received user information about unknown channel: " .. chan)
+    if not serverinfo.channels[chan].join_complete then
+        misc.try_call(on_me_join, serverinfo.channels[chan])
+        serverinfo.channels[chan].join_complete = true
+    end
+end
+-- }}}
+
+-- on_rpl_welcome {{{
+function handlers.on_rpl_welcome(from)
+    serverinfo = {
+        connected = false,
+        connecting = true,
+        channels = {}
+    }
+end
+-- }}}
+
+-- on_rpl_yourhost {{{
+function handlers.on_rpl_yourhost(from, msg)
+    serverinfo.host = from
+end
+-- }}}
+
+-- on_rpl_motdstart {{{
+function handlers.on_rpl_motdstart(from)
+    serverinfo.motd = ""
+end
+-- }}}
+
+-- on_rpl_motd {{{
+function handlers.on_rpl_motd(from, motd)
+    serverinfo.motd = (serverinfo.motd or "") .. motd .. "\n"
+end
+-- }}}
+
+-- on_rpl_endofmotd {{{
+function handlers.on_rpl_endofmotd(from)
+    if not serverinfo.connected then
+        serverinfo.connected = true
+        serverinfo.connecting = false
+        misc.try_call(on_connect)
+    end
+end
+-- }}}
+
+-- on_rpl_whoisuser {{{
+function handlers.on_rpl_whoisuser(from, nick, user, host, star, realname)
+    nick = nick:lower()
+    requestinfo.whois[nick].user = user
+    requestinfo.whois[nick].host = host
+    requestinfo.whois[nick].realname = realname
+end
+-- }}}
+
+-- on_rpl_whoischannels {{{
+function handlers.on_rpl_whoischannels(from, nick, channel_list)
+    nick = nick:lower()
+    if not requestinfo.whois[nick].channels then
+        requestinfo.whois[nick].channels = {}
+    end
+    for _, channel in base.ipairs(misc.split(channel_list)) do
+        table.insert(requestinfo.whois[nick].channels, channel)
+    end
+end
+-- }}}
+
+-- on_rpl_whoisserver {{{
+function handlers.on_rpl_whoisserver(from, nick, server, serverinfo)
+    nick = nick:lower()
+    requestinfo.whois[nick].server = server
+    requestinfo.whois[nick].serverinfo = serverinfo
+end
+-- }}}
+
+-- on_rpl_away {{{
+function handlers.on_rpl_away(from, nick, away_msg)
+    nick = nick:lower()
+    if requestinfo.whois[nick] then
+        requestinfo.whois[nick].away_msg = away_msg
+    end
+end
+-- }}}
+
+-- on_rpl_whoisoperator {{{
+function handlers.on_rpl_whoisoperator(from, nick)
+    requestinfo.whois[nick:lower()].is_oper = true
+end
+-- }}}
+
+-- on_rpl_whoisidle {{{
+function handlers.on_rpl_whoisidle(from, nick, idle_seconds)
+    requestinfo.whois[nick:lower()].idle_time = idle_seconds
+end
+-- }}}
+
+-- on_rpl_endofwhois {{{
+function handlers.on_rpl_endofwhois(from, nick)
+    nick = nick:lower()
+    local cb = table.remove(icallbacks.whois[nick], 1)
+    cb(requestinfo.whois[nick])
+    requestinfo.whois[nick] = nil
+    if #icallbacks.whois[nick] > 0 then send("WHOIS", nick)
+    else icallbacks.whois[nick] = nil
+    end
+end
+-- }}}
+
+-- on_rpl_version {{{
+function handlers.on_rpl_version(from, version, server, comments)
+    local cb = table.remove(icallbacks.serverversion[server], 1)
+    cb({version = version, server = server, comments = comments})
+    if #icallbacks.serverversion[server] > 0 then send("VERSION", server)
+    else icallbacks.serverversion[server] = nil
+    end
+end
+-- }}}
+
+-- on_rpl_time {{{
+function on_rpl_time(from, server, time)
+    local cb = table.remove(icallbacks.servertime[server], 1)
+    cb({time = time, server = server})
+    if #icallbacks.servertime[server] > 0 then send("TIME", server)
+    else icallbacks.servertime[server] = nil
+    end
+end
+-- }}}
+-- }}}
+
+-- ctcp handlers {{{
+-- requests {{{
+-- on_action {{{
+function ctcp_handlers.on_action(from, to, message)
+    if to:sub(1, 1) == "#" then
+        base.assert(serverinfo.channels[to],
+        "Received channel msg from unknown channel: " .. to)
+        misc.try_call(on_channel_act, serverinfo.channels[to], from, message)
+    else
+        misc.try_call(on_private_act, from, message)
+    end
+end
+-- }}}
+
+-- on_dcc {{{
+function ctcp_handlers.on_dcc(from, to, message)
+    local type, argument, address, port, size = base.unpack(misc.split(message, " ", nil, '"', '"'))
+    if type == "SEND" then
+        if misc.try_call(on_dcc, from, to, argument, address, port, size) then
+            dcc.accept(argument, address, port, size)
+        end
+    elseif type == "CHAT" then
+        -- TODO: implement this? do people ever use this?
+    end
+end
+-- }}}
+
+-- on_version {{{
+function ctcp_handlers.on_version(from, to)
+    notice(from, {"VERSION " .. _VERSION .. " running under " .. base._VERSION .. " with " .. socket._VERSION})
+end
+-- }}}
+
+-- on_errmsg {{{
+function ctcp_handlers.on_errmsg(from, to, message)
+    notice(from, {"ERRMSG " .. message .. "No error has occurred"})
+end
+-- }}}
+
+-- on_ping {{{
+function ctcp_handlers.on_ping(from, to, timestamp)
+    notice(from, {"PING " .. timestamp})
+end
+-- }}}
+
+-- on_time {{{
+function ctcp_handlers.on_time(from, to)
+    notice(from, {"TIME " .. os.date()})
+end
+-- }}}
+-- }}}
+
+-- responses {{{
+-- on_rpl_action {{{
+-- actions are handled the same, notice or not
+ctcp_handlers.on_rpl_action = ctcp_handlers.on_action
+-- }}}
+
+-- on_rpl_version {{{
+function ctcp_handlers.on_rpl_version(from, to, version)
+    local cb = table.remove(icallbacks.ctcp_version[from], 1)
+    cb({version = version, nick = from})
+    if #icallbacks.ctcp_version[from] > 0 then say(from, {"VERSION"})
+    else icallbacks.ctcp_version[from] = nil
+    end
+end
+-- }}}
+
+-- on_rpl_errmsg {{{
+function ctcp_handlers.on_rpl_errmsg(from, to, message)
+    try_call(on_ctcp_error, from, to, message)
+end
+-- }}}
+
+-- on_rpl_ping {{{
+function ctcp_handlers.on_rpl_ping(from, to, timestamp)
+    local cb = table.remove(icallbacks.ctcp_ping[from], 1)
+    cb({time = os.time() - timestamp, nick = from})
+    if #icallbacks.ctcp_ping[from] > 0 then say(from, {"PING " .. os.time()})
+    else icallbacks.ctcp_ping[from] = nil
+    end
+end
+-- }}}
+
+-- on_rpl_time {{{
+function ctcp_handlers.on_rpl_time(from, to, time)
+    local cb = table.remove(icallbacks.ctcp_time[from], 1)
+    cb({time = time, nick = from})
+    if #icallbacks.ctcp_time[from] > 0 then say(from, {"TIME"})
+    else icallbacks.ctcp_time[from] = nil
+    end
+end
+-- }}}
+-- }}}
+-- }}}
+-- }}}
+
+-- module functions {{{
+-- socket handling functions {{{
+-- _register_socket() - register a socket to listen on {{{
+function _register_socket(sock, mode, cb)
+    local socks, cbs
+    if mode == 'r' then
+        socks = rsockets
+        cbs = rcallbacks
+    else
+        socks = wsockets
+        cbs = wcallbacks
+    end
+    base.assert(not cbs[sock], "socket already registered")
+    table.insert(socks, sock)
+    cbs[sock] = cb
+end
+-- }}}
+
+-- _unregister_socket() - remove a previously registered socket {{{
+function _unregister_socket(sock, mode)
+    local socks, cbs
+    if mode == 'r' then
+        socks = rsockets
+        cbs = rcallbacks
+    else
+        socks = wsockets
+        cbs = wcallbacks
+    end
+    for i, v in base.ipairs(socks) do
+        if v == sock then table.remove(socks, i); break; end
+    end
+    cbs[sock] = nil
+end
+-- }}}
+-- }}}
+-- }}}
+
+-- public functions {{{
+-- server commands {{{
+-- connect() - start a connection to the irc server {{{
+-- args: network  - address of the irc network to connect to
+--       port     - port to connect to
+--       pass     - irc server password (if required)
+--       nick     - nickname to connect as
+--       username - username to connect with
+--       realname - realname to connect with
+--       timeout  - amount of time in seconds to wait before dropping an idle
+--                  connection
+-- notes: this function uses a table and named arguments. defaults are specified
+--        by the capitalized versions of the arguments at the top of this file.
+--        all args are optional.
+function connect(args)
+    local network = args.network or NETWORK
+    local port = args.port or PORT
+    local nick = args.nick or NICK
+    local username = args.username or USERNAME
+    local realname = args.realname or REALNAME
+    local timeout = args.timeout or TIMEOUT
+    serverinfo.connecting = true
+    if OUTFILE then irc_debug.set_output(OUTFILE) end
+    if DEBUG then irc_debug.enable() end
+    irc_sock = base.assert(socket.connect(network, port))
+    irc_sock:settimeout(timeout)
+    _register_socket(irc_sock, 'r', incoming_message)
+    if args.pass then send("PASS", args.pass) end
+    send("NICK", nick)
+    send("USER", username, (irc_sock:getsockname()), network, realname)
+    begin_main_loop()
+end
+-- }}}
+
+-- quit() - close the connection to the irc server {{{
+-- args: message - quit message (optional)
+function quit(message)
+    message = message or "Leaving"
+    send("QUIT", message)
+    serverinfo.connected = false
+end
+-- }}}
+
+-- join() - join a channel {{{
+-- args: channel - channel to join (required)
+function join(channel)
+    if not channel then return end
+    serverinfo.channels[channel] = Channel.new(channel)
+    send("JOIN", channel)
+end
+-- }}}
+
+-- part() - leave a channel {{{
+-- args: channel - channel to leave (required)
+function part(channel)
+    if not channel then return end
+    serverinfo.channels[channel] = nil
+    send("PART", channel)
+end
+-- }}}
+
+-- say() - send a message to a user or channel {{{
+-- args: name    - user or channel to send the message to
+--       message - message to send
+function say(name, message)
+    if not name then return end
+    message = message or ""
+    send("PRIVMSG", name, message)
+end
+-- }}}
+
+-- notice() - send a notice to a user or channel {{{
+-- args: name    - user or channel to send the notice to
+--       message - message to send
+function notice(name, message)
+    if not name then return end
+    message = message or ""
+    send("NOTICE", name, message)
+end
+-- }}}
+
+-- act() - perform a /me action {{{
+-- args: name   - user or channel to send the action to
+--       action - action to send
+function act(name, action)
+    if not name then return end
+    action = action or ""
+    send("PRIVMSG", name, {"ACTION", action})
+end
+-- }}}
+-- }}}
+
+-- information requests {{{
+-- server_version {{{
+function server_version(cb, server)
+    -- apparently the optional server parameter isn't supported?
+    --server = server or serverinfo.host
+    server = serverinfo.host
+    if not icallbacks.serverversion[server] then
+        icallbacks.serverversion[server] = {cb}
+        send("VERSION", server)
+    else
+        table.insert(icallbacks.serverversion[server], cb)
+    end
+end
+-- }}}
+
+-- whois {{{
+-- TODO: allow server parameter (to get user idle time)
+function whois(cb, nick)
+    nick = nick:lower()
+    requestinfo.whois[nick] = {nick = nick}
+    if not icallbacks.whois[nick] then
+        icallbacks.whois[nick] = {cb}
+        send("WHOIS", nick)
+    else
+        table.insert(icallbacks.whois[nick], cb)
+    end
+end
+-- }}}
+
+-- server_time {{{
+function server_time(cb, server)
+    -- apparently the optional server parameter isn't supported?
+    --server = server or serverinfo.host
+    server = serverinfo.host
+    if not icallbacks.servertime[server] then
+        icallbacks.servertime[server] = {cb}
+        send("TIME", server)
+    else
+        table.insert(icallbacks.servertime[server], cb)
+    end
+end
+-- }}}
+
+-- trace {{{
+--function trace(cb, server)
+--    send("WHOWAS", "ekiM")
+--end
+-- }}}
+-- }}}
+
+-- ctcp commands {{{
+-- ctcp_ping() - send a CTCP ping request {{{
+function ctcp_ping(cb, nick)
+    nick = nick:lower()
+    if not icallbacks.ctcp_ping[nick] then
+        icallbacks.ctcp_ping[nick] = {cb}
+        say(nick, {"PING " .. os.time()})
+    else
+        table.insert(icallbacks.ctcp_ping[nick], cb)
+    end
+end
+-- }}}
+
+-- ctcp_time() - send a localtime request {{{
+function ctcp_time(cb, nick)
+    nick = nick:lower()
+    if not icallbacks.ctcp_time[nick] then
+        icallbacks.ctcp_time[nick] = {cb}
+        say(nick, {"TIME"})
+    else
+        table.insert(icallbacks.ctcp_time[nick], cb)
+    end
+end
+-- }}}
+
+-- ctcp_version() - send a client version request {{{
+function ctcp_version(cb, nick)
+    nick = nick:lower()
+    if not icallbacks.ctcp_version[nick] then
+        icallbacks.ctcp_version[nick] = {cb}
+        say(nick, {"VERSION"})
+    else
+        table.insert(icallbacks.ctcp_version[nick], cb)
+    end
+end
+-- }}}
+-- }}}
+
+-- misc functions {{{
+-- send() - send a raw irc command {{{
+-- send takes a command and a variable number of arguments
+-- if the argument is a string, it is sent literally
+-- if the argument is a table, it is CTCP quoted
+-- the last argument is preceded by a :
+function send(command, ...)
+    if not serverinfo.connected and not serverinfo.connecting then return end
+    local message = command
+    for i, v in base.ipairs({...}) do
+        local arg
+        -- passing a table in as an argument means to treat that table as a
+        -- CTCP command, so quote it appropriately
+        if base.type(v) == "string" then
+            arg = v
+        elseif base.type(v) == "table" then
+            arg = ctcp.ctcp_quote(table.concat(v, " "))
+        end
+        if i == #{...} then
+            arg = ":" .. arg
+        end
+        message = message .. " " .. arg
+    end
+    message = ctcp.low_quote(message)
+    -- we just truncate for now. -2 to account for the \r\n
+    message = message:sub(1, constants.IRC_MAX_MSG - 2)
+    irc_debug.message("SEND", message)
+    irc_sock:send(message .. "\r\n")
+end
+-- }}}
+
+-- get_ip() - get the local ip address for the server connection {{{
+function get_ip()
+    return (irc_sock:getsockname())
+end
+-- }}}
+
+-- channels() - iterate over currently joined channels {{{
+function channels()
+    return function(state, arg)
+               return misc.value_iter(state, arg,
+                                      function(v)
+                                          return v.join_complete
+                                      end)
+           end,
+           serverinfo.channels,
+           nil
+end
+-- }}}
+-- }}}
+-- }}}
