@@ -23,6 +23,9 @@ LAST_PORT = 5000
 
 -- private functions {{{
 -- send_file {{{
+-- TODO: no reason to be sending the size parameter all over the place when we
+-- only need it in this function. also, should probably seek to the beginning
+-- of the file before sending it.
 --
 -- Sends a file to a remote user, after that user has accepted our DCC SEND
 -- invitation
@@ -140,6 +143,7 @@ end
 -- }}}
 
 -- accept {{{
+-- TODO: this shouldn't be a public function
 --
 -- Accepts a file offer from a remote user. Called when the on_dcc callback
 -- retuns true.
