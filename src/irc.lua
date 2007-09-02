@@ -734,6 +734,15 @@ end
 
 -- information requests {{{
 -- server_version {{{
+---
+-- Request the version of the IRC server you are currently connected to.
+-- @param cb Callback to call when the information is available. The single
+--           table parameter to this callback will contain the fields:
+--           <ul>
+--           <li><i>server:</i>   the server which responded to the request</li>
+--           <li><i>version:</i>  the server version</li>
+--           <li><i>comments:</i> other data provided by the server</li>
+--           </ul>
 function server_version(cb)
     -- apparently the optional server parameter isn't supported for servers
     -- which you are not directly connected to (freenode specific?)
@@ -749,6 +758,28 @@ end
 
 -- whois {{{
 -- TODO: allow server parameter (to get user idle time)
+---
+-- Request WHOIS information about a given user.
+-- @param cb Callback to call when the information is available. The single
+--           table parameter to this callback may contain any or all of the
+--           fields:
+--           <ul>
+--           <li><i>nick:</i>       the nick that was passed to this function
+--                                  (this field will always be here)</li>
+--           <li><i>user:</i>       the IRC username of the user</li>
+--           <li><i>host:</i>       the user's hostname</li>
+--           <li><i>realname:</i>   the IRC realname of the user</li>
+--           <li><i>server:</i>     the IRC server the user is connected to</li>
+--           <li><i>serverinfo:</i> arbitrary information about the above
+--                                  server</li>
+--           <li><i>awaymsg:</i>    set to the user's away message if they are
+--                                  away</li>
+--           <li><i>is_oper:</i>    true if the user is an IRCop</li>
+--           <li><i>idle_time:</i>  amount of time the user has been idle</li>
+--           <li><i>channels:</i>   array containing the channels the user has
+--                                  joined</li>
+--           </ul>
+-- @param nick User to request WHOIS information about
 function whois(cb, nick)
     nick = nick:lower()
     requestinfo.whois[nick] = {nick = nick}
@@ -762,6 +793,14 @@ end
 -- }}}
 
 -- server_time {{{
+---
+-- Request the current time of the server you are connected to.
+-- @param cb Callback to call when the information is available. The single
+--           table parameter to this callback will contain the fields:
+--           <ul>
+--           <li><i>server:</i> the server which responded to the request</li>
+--           <li><i>time:</i>   the time reported by the server</li>
+--           </ul>
 function server_time(cb)
     -- apparently the optional server parameter isn't supported for servers
     -- which you are not directly connected to (freenode specific?)
