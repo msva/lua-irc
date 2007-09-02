@@ -942,7 +942,7 @@ end
 -- Iterate over currently joined channels.
 -- channels() is an iterator function for use in for loops.
 -- For example, <pre>for chan in irc.channels() do print(chan:name) end</pre>
--- @see src/irc/channel.lua
+-- @see irc.channel
 function channels()
     return function(state, arg)
                return misc.value_iter(state, arg,
