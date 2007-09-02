@@ -5,5 +5,4 @@ implement information callbacks (modes, whois, etc)
 - stats
 - links
 - trace (not freenode supported)
-add comments
 allow the user to set the socket ip (for dcc, etc)
