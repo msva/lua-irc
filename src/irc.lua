@@ -496,6 +496,8 @@ end
 -- }}}
 
 -- on_dcc {{{
+-- TODO: can we not have this handler be registered unless the dcc module is
+-- loaded?
 function ctcp_handlers.on_dcc(from, to, message)
     local type, argument, address, port, size = base.unpack(misc.split(message, " ", nil, '"', '"'))
     if type == "SEND" then
