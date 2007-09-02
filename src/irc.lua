@@ -580,7 +580,13 @@ end
 
 -- module functions {{{
 -- socket handling functions {{{
--- _register_socket() - register a socket to listen on {{{
+-- _register_socket {{{
+--
+-- Register a socket to listen on.
+-- @param sock LuaSocket socket object
+-- @param mode 'r' if the socket is for reading, 'w' if for writing
+-- @param cb   Callback to call when the socket is ready for reading/writing.
+--             It will be called with the socket as the single argument.
 function _register_socket(sock, mode, cb)
     local socks, cbs
     if mode == 'r' then
@@ -596,7 +602,11 @@ function _register_socket(sock, mode, cb)
 end
 -- }}}
 
--- _unregister_socket() - remove a previously registered socket {{{
+-- _unregister_socket {{{
+--
+-- Remove a previously registered socket.
+-- @param sock Socket to unregister
+-- @param mode 'r' to unregister it for reading, 'w' for writing
 function _unregister_socket(sock, mode)
     local socks, cbs
     if mode == 'r' then
