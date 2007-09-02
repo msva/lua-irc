@@ -1,3 +1,6 @@
+---
+-- Implementation of the main LuaIRC module
+
 -- initialization {{{
 local base =      _G
 local constants = require 'irc.constants'
@@ -10,6 +13,9 @@ local string =    require 'string'
 local table =     require 'table'
 -- }}}
 
+---
+-- LuaIRC - IRC framework written in Lua
+-- @release 0.02
 module 'irc'
 
 -- constants {{{
