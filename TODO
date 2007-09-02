@@ -1,3 +1,25 @@
+Before next release
+===================
+- Document available callbacks
+- Allow the user to set the socket ip (for dcc, etc) in case it's different from what we detect (behind a firewall, etc)
+- Rework the way irc.lua uses things from modules - there are quite a few things which shouldn't be part of the public user interface which are right now. Probably just use the leading underscore convention for right now, but hopefully a lot of that stuff can be refactored.
+- Don't send color escape sequences to files if we have redirected output
+
+For the future
+==============
+- Rework the way CTCP quoting is handled throughout the code... the whole string/table thing is pretty ugly
+- Rework callback system to use registration rather than just assigning to stuff inside the irc module, so that we can do things like have multiple handlers automatically
+- Separate out the DCC module some more so that the callbacks aren't registered unless the module is loaded
+- Also separate out all of the CTCP commands/callbacks into the CTCP module
+- The chain of callbacks for sending a file over DCC shouldn't have to pass the filesize all around... it's only needed at the end, and it can be gotten easily from the file object which we are already passing around
+  - We should also probably be seeking to the beginning of the file before sending it over DCC (or do we want to allow sending partial files through manually specifying the offset and size?)
+- Implement callbacks for user mode changes (need to figure out how to represent users in the callback info)
+- Allow a server parameter in whois() so that the returned data can include the user's idle time
+- chan:ban()/chan:unban() should take a usermask, not a nick, or be able to generate a usermask from a nick, or something like that
+- Clean up misc.split
+- Implement DCC CHAT
+- Implement DCC XMIT/OFFER
+- Implement some more of the newer CTCP commands
 - Implement more information requests
   - who
   - whowas
@@ -5,22 +27,5 @@
   - stats
   - links
   - trace (not freenode supported)
-- Allow the user to set the socket ip (for dcc, etc) in case it's different from what we detect (behind a firewall, etc)
-- Document available callbacks
-- Rework callback system to use registration rather than just assigning to stuff inside the irc module, so that we can do things like have multiple handlers automatically
-- Implement callbacks for user mode changes (need to figure out how to represent users in the callback info)
-- Separate out the DCC module some more so that the callbacks aren't registered unless the module is loaded
-- Also separate out all of the CTCP commands/callbacks into the CTCP module
-- Implement DCC CHAT
-- Implement DCC XMIT/OFFER
 - Implement XDCC (?)
-- Implement some more of the newer CTCP commands
-- Allow a server parameter in whois() so that the returned data can include the user's idle time
-- Rework the way CTCP quoting is handled throughout the code... the whole string/table thing is pretty ugly
-- chan:ban()/chan:unban() should take a usermask, not a nick, or be able to generate a usermask from a nick, or something like that
-- Rework the way irc.lua uses things from modules - there are quite a few things which shouldn't be part of the public user interface which are right now. Probably just use the leading underscore convention for right now, but hopefully a lot of that stuff can be refactored.
-- The chain of callbacks for sending a file over DCC shouldn't have to pass the filesize all around... it's only needed at the end, and it can be gotten easily from the file object which we are already passing around
-  - We should also probably be seeking to the beginning of the file before sending it over DCC (or do we want to allow sending partial files through manually specifying the offset and size?)
-- Don't send color escape sequences to files if we have redirected output
-- Clean up misc.split
 - Handle endianness in the IP address conversion functions
