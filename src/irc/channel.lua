@@ -232,45 +232,74 @@ end
 -- }}}
 
 -- setting modes {{{
--- ban() - ban a user from a channel {{{
+-- ban {{{
 -- TODO: hmmm, this probably needs an appropriate mask, rather than a nick
+---
+-- Ban a user from a channel.
+-- @param self Channel object
+-- @param name User to ban
 function ban(self, name)
     irc.send("MODE", self.name, "+b", name)
 end
 -- }}}
 
--- unban() - remove a ban on a user {{{
+-- unban {{{
 -- TODO: same here
+---
+-- Remove a ban on a user.
+-- @param self Channel object
+-- @param name User to unban
 function unban(self, name)
     irc.send("MODE", self.name, "-b", name)
 end
 -- }}}
 
--- voice() - give a user voice on a channel {{{
+-- voice {{{
+---
+-- Give a user voice on a channel.
+-- @param self Channel object
+-- @param name User to give voice to
 function voice(self, name)
     irc.send("MODE", self.name, "+v", name)
 end
 -- }}}
 
--- devoice() - remove voice from a user {{{
+-- devoice {{{
+---
+-- Remove voice from a user.
+-- @param self Channel object
+-- @param name User to remove voice from
 function devoice(self, name)
     irc.send("MODE", self.name, "-v", name)
 end
 -- }}}
 
--- op() - give a user ops on a channel {{{
+-- op {{{
+---
+-- Give a user ops on a channel.
+-- @param self Channel object
+-- @param name User to op
 function op(self, name)
     irc.send("MODE", self.name, "+o", name)
 end
 -- }}}
 
--- deop() - remove ops from a user {{{
+-- deop {{{
+---
+-- Remove ops from a user.
+-- @param self Channel object
+-- @param name User to remove ops from
 function deop(self, name)
     irc.send("MODE", self.name, "-o", name)
 end
 -- }}}
 
--- set_limit() - set a channel limit {{{
+-- set_limit {{{
+---
+-- Set a channel limit.
+-- @param self      Channel object
+-- @param new_limit New value for the channel limit (optional; limit is unset
+--                  if this argument isn't passed)
 function set_limit(self, new_limit)
     if new_limit then
         irc.send("MODE", self.name, "+l", new_limit)
@@ -280,7 +309,12 @@ function set_limit(self, new_limit)
 end
 -- }}}
 
--- set_key() - set a channel password {{{
+-- set_key {{{
+---
+-- Set a channel password.
+-- @param self Channel object
+-- @param key  New channel password (optional; password is unset if this
+--             argument isn't passed)
 function set_key(self, key)
     if key then
         irc.send("MODE", self.name, "+k", key)
@@ -290,37 +324,62 @@ function set_key(self, key)
 end
 -- }}}
 
--- set_private() - set the private state of a channel {{{
+-- set_private() {{{
+---
+-- Set the private state of a channel.
+-- @param self Channel object
+-- @param set  True to set the channel as private, false to unset it
 function set_private(self, set)
     set_basic_mode(self, set, "p")
 end
 -- }}}
 
--- set_secret() - set the secret state of a channel {{{
+-- set_secret {{{
+---
+-- Set the secret state of a channel.
+-- @param self Channel object
+-- @param set  True to set the channel as secret, false to unset it
 function set_secret(self, set)
     set_basic_mode(self, set, "s")
 end
 -- }}}
 
--- set_invite_only() - set whether joining the channel requires an invite {{{
+-- set_invite_only {{{
+---
+-- Set whether joining the channel requires an invite.
+-- @param self Channel object
+-- @param set  True to set the channel invite only, false to unset it
 function set_invite_only(self, set)
     set_basic_mode(self, set, "i")
 end
 -- }}}
 
--- set_topic_lock() - if true, the topic can only be changed by an op {{{
+-- set_topic_lock {{{
+---
+-- If true, the topic can only be changed by an op.
+-- @param self Channel object
+-- @param set  True to lock the topic, false to unlock it
 function set_topic_lock(self, set)
     set_basic_mode(self, set, "t")
 end
 -- }}}
 
--- set_no_outside_messages() - if true, users must be in the channel to send messages to it {{{
+-- set_no_outside_messages {{{
+---
+-- If true, users must be in the channel to send messages to it.
+-- @param self Channel object
+-- @param set  True to require users to be in the channel to send messages to
+--             it, false to remove this restriction
 function set_no_outside_messages(self, set)
     set_basic_mode(self, set, "n")
 end
 -- }}}
 
--- set moderated() - set whether voice is required to speak {{{
+-- set moderated {{{
+---
+-- Set whether voice is required to speak.
+-- @param self Channel object
+-- @param set  True to set the channel as moderated, false to unset it
 function set_moderated(self, set)
     set_basic_mode(self, set, "m")
 end
