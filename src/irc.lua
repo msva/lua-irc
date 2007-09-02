@@ -816,7 +816,16 @@ end
 -- }}}
 
 -- ctcp commands {{{
--- ctcp_ping() - send a CTCP ping request {{{
+-- ctcp_ping {{{
+---
+-- Send a CTCP ping request.
+-- @param cb Callback to call when the information is available. The single
+--           table parameter to this callback will contain the fields:
+--           <ul>
+--           <li><i>nick:</i> the nick which responded to the request</li>
+--           <li><i>time:</i> the roundtrip ping time, in seconds</li>
+--           </ul>
+-- @param nick User to ping
 function ctcp_ping(cb, nick)
     nick = nick:lower()
     if not icallbacks.ctcp_ping[nick] then
@@ -828,7 +837,16 @@ function ctcp_ping(cb, nick)
 end
 -- }}}
 
--- ctcp_time() - send a localtime request {{{
+-- ctcp_time {{{
+---
+-- Send a localtime request.
+-- @param cb Callback to call when the information is available. The single
+--           table parameter to this callback will contain the fields:
+--           <ul>
+--           <li><i>nick:</i> the nick which responded to the request</li>
+--           <li><i>time:</i> the localtime reported by the remote client</li>
+--           </ul>
+-- @param nick User to request the localtime from
 function ctcp_time(cb, nick)
     nick = nick:lower()
     if not icallbacks.ctcp_time[nick] then
@@ -840,7 +858,16 @@ function ctcp_time(cb, nick)
 end
 -- }}}
 
--- ctcp_version() - send a client version request {{{
+-- ctcp_version {{{
+---
+-- Send a client version request.
+-- @param cb Callback to call when the information is available. The single
+--           table parameter to this callback will contain the fields:
+--           <ul>
+--           <li><i>nick:</i>    the nick which responded to the request</li>
+--           <li><i>version:</i> the version reported by the remote client</li>
+--           </ul>
+-- @param nick User to request the client version from
 function ctcp_version(cb, nick)
     nick = nick:lower()
     if not icallbacks.ctcp_version[nick] then
