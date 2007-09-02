@@ -881,11 +881,16 @@ end
 -- }}}
 
 -- misc functions {{{
--- send() - send a raw irc command {{{
--- send takes a command and a variable number of arguments
--- if the argument is a string, it is sent literally
--- if the argument is a table, it is CTCP quoted
--- the last argument is preceded by a :
+-- TODO: CTCP quoting should be explicit, this table thing is quite ugly (if
+-- convenient)
+-- send {{{
+---
+-- Send a raw IRC command.
+-- @param command String containing the raw IRC command
+-- @param ...     Arguments to the command. Each argument is either a string or
+--                an array. Strings are sent literally, arrays are CTCP quoted
+--                as a group. The last argument (if it exists) is preceded by
+--                a : (so it may contain spaces).
 function send(command, ...)
     if not serverinfo.connected and not serverinfo.connecting then return end
     local message = command
@@ -911,13 +916,23 @@ function send(command, ...)
 end
 -- }}}
 
--- get_ip() - get the local ip address for the server connection {{{
+-- get_ip {{{
+---
+-- Get the local IP address for the server connection.
+-- @return A string representation of the local IP address that the IRC server
+--         connection is communicating on
 function get_ip()
     return (irc_sock:getsockname())
 end
 -- }}}
 
--- channels() - iterate over currently joined channels {{{
+-- channels {{{
+-- TODO: @see doesn't currently work for files/modules
+---
+-- Iterate over currently joined channels.
+-- channels() is an iterator function for use in for loops.
+-- For example, <pre>for chan in irc.channels() do print(chan:name) end</pre>
+-- @see src/irc/channel.lua
 function channels()
     return function(state, arg)
                return misc.value_iter(state, arg,
