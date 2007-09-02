@@ -10,6 +10,7 @@
 - Rework callback system to use registration rather than just assigning to stuff inside the irc module, so that we can do things like have multiple handlers automatically
 - Implement callbacks for user mode changes (need to figure out how to represent users in the callback info)
 - Separate out the DCC module some more so that the callbacks aren't registered unless the module is loaded
+- Also separate out all of the CTCP commands/callbacks into the CTCP module
 - Implement DCC CHAT
 - Implement DCC XMIT/OFFER
 - Implement XDCC (?)
