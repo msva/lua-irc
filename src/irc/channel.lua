@@ -1,3 +1,6 @@
+---
+-- Implementation of the Channel class
+
 -- initialization {{{
 local base =   _G
 local irc =    require 'irc'
@@ -6,9 +9,25 @@ local socket = require 'socket'
 local table =  require 'table'
 -- }}}
 
+---
+-- This module implements a channel object representing a single channel we
+-- have joined
+-- @release 0.02
 module 'irc.channel'
 
 -- object metatable {{{
+-- TODO: this <br /> shouldn't be necessary - bug in luadoc
+---
+-- An object of the Channel class represents a single joined channel. It has
+-- several table fields, and can be used in string contexts (returning the
+-- channel name).<br />
+-- @class table
+-- @name Channel
+-- @field name     Name of the channel (read only)
+-- @field topic    Channel topic, if set (read/write, writing to this sends a
+--                 topic change request to the server for this channel)
+-- @field chanmode Channel mode (public/private/secret) (read only)
+-- @field members  Array of all members of this channel
 local mt = {
     -- __index() {{{
     __index =    function(self, key)
@@ -63,7 +82,13 @@ local mt = {
 -- }}}
 
 -- private methods {{{
--- set_basic_mode() - sets a no-arg mode on a channel {{{
+-- set_basic_mode {{{
+--
+-- Sets a no-arg mode on a channel.
+-- @name chan:set_basic_mode
+-- @param self   Channel object
+-- @param set    True to set the mode, false to unset it
+-- @param letter Letter of the mode
 local function set_basic_mode(self, set, letter)
     if set then
         irc.send("MODE", self.name, "+" .. letter)
@@ -75,6 +100,10 @@ end
 -- }}}
 
 -- constructor {{{
+---
+-- Creates a new Channel object.
+-- @param chan Name of the new channel
+-- @return The new channel instance
 function new(chan)
     return base.setmetatable({_name = chan, _topic = {}, _chanmode = "",
                               _members = {}}, mt)
@@ -83,7 +112,10 @@ end
 
 -- public methods {{{
 -- iterators {{{
--- each_op() {{{
+-- each_op {{{
+---
+-- Iterator over the ops in the channel
+-- @param self Channel object
 function each_op(self)
     return function(state, arg)
                return misc.value_iter(state, arg,
@@ -96,7 +128,10 @@ function each_op(self)
 end
 -- }}}
 
--- each_voice() {{{
+-- each_voice {{{
+---
+-- Iterator over the voiced users in the channel
+-- @param self Channel object
 function each_voice(self)
     return function(state, arg)
                return misc.value_iter(state, arg,
@@ -109,7 +144,10 @@ function each_voice(self)
 end
 -- }}}
 
--- each_user() {{{
+-- each_user {{{
+---
+-- Iterator over the normal users in the channel
+-- @param self Channel object
 function each_user(self)
     return function(state, arg)
                return misc.value_iter(state, arg,
@@ -123,7 +161,10 @@ function each_user(self)
 end
 -- }}}
 
--- each_member() {{{
+-- each_member {{{
+---
+-- Iterator over all users in the channel
+-- @param self Channel object
 function each_member(self)
     return misc.value_iter, self._members, nil
 end
@@ -131,7 +172,11 @@ end
 -- }}}
 
 -- return tables of users {{{
--- ops() {{{
+-- ops {{{
+---
+-- Gets an array of all the ops in the channel.
+-- @param self Channel object
+-- @return Array of channel ops
 function ops(self)
     local ret = {}
     for nick in self:each_op() do
@@ -141,7 +186,11 @@ function ops(self)
 end
 -- }}}
 
--- voices() {{{
+-- voices {{{
+---
+-- Gets an array of all the voiced users in the channel.
+-- @param self Channel object
+-- @return Array of channel voiced users
 function voices(self)
     local ret = {}
     for nick in self:each_voice() do
@@ -151,7 +200,11 @@ function voices(self)
 end
 -- }}}
 
--- users() {{{
+-- users {{{
+---
+-- Gets an array of all the normal users in the channel.
+-- @param self Channel object
+-- @return Array of channel normal users
 function users(self)
     local ret = {}
     for nick in self:each_user() do
@@ -161,7 +214,11 @@ function users(self)
 end
 -- }}}
 
--- members() {{{
+-- members {{{
+---
+-- Gets an array of all the users in the channel.
+-- @param self Channel object
+-- @return Array of channel users
 function members(self)
     local ret = {}
     -- not just returning self._members, since the return value shouldn't be
