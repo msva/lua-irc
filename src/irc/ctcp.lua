@@ -1,14 +1,22 @@
+---
+-- Implementation of the CTCP protocol
 -- initialization {{{
 local base = _G
 local table = require "table"
 -- }}}
 
+---
+-- This module implements the various quoting and escaping requirements of the
+-- CTCP protocol.
 module "irc.ctcp"
 
 -- public functions {{{
 -- low_quote {{{
--- applies low level quoting to a string (escaping characters which
--- are illegal to appear in an irc packet)
+--
+-- Applies low level quoting to a string (escaping characters which are illegal
+-- to appear in an IRC packet).
+-- @param str String to quote
+-- @return Quoted string
 function low_quote(str)
     return str:gsub("[%z\n\r\020]", {["\000"] = "\0200",
                                      ["\n"]   = "\020n",
@@ -18,7 +26,10 @@ end
 -- }}}
 
 -- low_dequote {{{
--- removes low level quoting done by low_quote
+--
+-- Removes low level quoting done by low_quote.
+-- @param str String with low level quoting applied to it
+-- @return String with those quoting methods stripped off
 function low_dequote(str)
     return str:gsub("\020(.?)", function(s)
                                     if s == "0" then return "\000" end
@@ -31,8 +42,11 @@ end
 -- }}}
 
 -- ctcp_quote {{{
--- applies ctcp quoting to a block of text which has been identified
--- as ctcp data (by the calling program)
+--
+-- Applies CTCP quoting to a block of text which has been identified as CTCP
+-- data (by the calling program).
+-- @param str String to apply CTCP quoting to
+-- @return String with CTCP quoting applied
 function ctcp_quote(str)
     local ret = str:gsub("[\001\\]", {["\001"] = "\\a",
                                       ["\\"]   = "\\\\"})
@@ -41,8 +55,11 @@ end
 -- }}}
 
 -- ctcp_dequote {{{
--- removes ctcp quoting from a block of text which has been
--- identified as ctcp data (likely by ctcp_split)
+--
+-- Removes CTCP quoting from a block of text which has been identified as CTCP
+-- data (likely by ctcp_split).
+-- @param str String with CTCP quoting
+-- @return String with all CTCP quoting stripped
 function ctcp_dequote(str)
     local ret = str:gsub("^\001", ""):gsub("\001$", "")
     return ret:gsub("\\(.?)", function(s)
@@ -54,10 +71,13 @@ end
 -- }}}
 
 -- ctcp_split {{{
--- takes in a mid_level (low level dequoted) string and splits it
--- up into normal text and ctcp messages. it returns an array, where string
--- values correspond to plain text and table values have t[1] as the ctcp
--- message. if dequote is true, each ctcp message will also be ctcp dequoted.
+-- TODO: again with this string/table thing... it's ugly!
+--
+-- Splits a low level dequoted string into normal text and CTCP messages.
+-- @param str Low level dequoted string
+-- @param dequote If true, the CTCP messages will also be CTCP dequoted
+-- @return Array, where string values correspond to plain text, and table
+--         values have t[1] as the CTCP message
 function ctcp_split(str, dequote)
     local ret = {}
     local iter = 1
