@@ -891,9 +891,9 @@ end
 -- }}}
 
 -- misc functions {{{
+-- send {{{
 -- TODO: CTCP quoting should be explicit, this table thing is quite ugly (if
 -- convenient)
--- send {{{
 ---
 -- Send a raw IRC command.
 -- @param command String containing the raw IRC command
