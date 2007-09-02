@@ -11,7 +11,7 @@ local table =  require 'table'
 
 ---
 -- This module implements a channel object representing a single channel we
--- have joined
+-- have joined.
 -- @release 0.02
 module 'irc.channel'
 
