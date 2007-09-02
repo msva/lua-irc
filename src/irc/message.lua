@@ -1,3 +1,5 @@
+---
+-- Implementation of IRC server message parsing
 -- initialization {{{
 local base =      _G
 local constants = require 'irc.constants'
@@ -9,10 +11,27 @@ local string =    require 'string'
 local table =     require 'table'
 -- }}}
 
+---
+-- This module contains parsing functions for IRC server messages.
 module 'irc.message'
 
 -- local functions {{{
--- parse() - parse a server command {{{
+-- parse {{{
+--
+-- Parse a server command.
+-- @param str Command to parse
+-- @return Table containing the parsed message. It contains:
+--         <ul>
+--         <li><i>from:</i>    The source of this message, in full usermask
+--                             form (nick!user@host) for messages originating
+--                             from users, and as a hostname for messages from
+--                             servers</li>
+--         <li><i>command:</i> The command sent, in name form if possible,
+--                             otherwise as a numeric code</li>
+--         <li><i>args:</i>    Array of strings corresponding to the arguments
+--                             to the received command</li>
+--
+--         </ul>
 function parse(str)
     -- low-level ctcp quoting {{{
     str = ctcp.low_dequote(str)
