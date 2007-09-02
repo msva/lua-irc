@@ -1,3 +1,5 @@
+---
+-- Various useful functions that didn't fit anywhere else
 -- initialization {{{
 local base =      _G
 local irc_debug = require 'irc.debug'
@@ -8,6 +10,9 @@ local string =    require 'string'
 local table =     require 'table'
 -- }}}
 
+---
+-- This module contains various useful functions which didn't fit in any of the
+-- other modules.
 module 'irc.misc'
 
 -- defaults {{{
@@ -18,6 +23,12 @@ INT_BYTES = 4
 -- }}}
 
 -- private functions {{{
+--
+-- Check for existence of a file. This returns true if renaming a file to
+-- itself succeeds. This isn't ideal (I think anyway) but it works here, and
+-- lets me not have to bring in LFS as a dependency.
+-- @param filename File to check for existence
+-- @return True if the file exists, false otherwise
 local function exists(filename)
     local _, err = os.rename(filename, filename)
     if not err then return true end
@@ -26,7 +37,45 @@ end
 -- }}}
 
 -- public functions {{{
--- split() - splits str into substrings based on several options {{{
+-- parse_user {{{
+---
+-- Gets the various parts of a full username.
+-- @param user A usermask (i.e. returned in the from field of a callback)
+-- @return nick
+-- @return username (if it exists)
+-- @return hostname (if it exists)
+function parse_user(user)
+    local found, bang, nick = user:find("^([^!]*)!")
+    if found then
+        user = user:sub(bang + 1)
+    else
+        return user
+    end
+    local found, equals = user:find("^.=")
+    if found then
+        user = user:sub(3)
+    end
+    local found, at, username = user:find("^([^@]*)@")
+    if found then
+        return nick, username, user:sub(at + 1)
+    else
+        return nick, user
+    end
+end
+-- }}}
+
+-- split {{{
+--
+-- Splits str into substrings based on several options.
+-- @param str String to split
+-- @param delim String of characters to use as the beginning of substring
+--              delimiter
+-- @param end_delim String of characters to use as the end of substring
+--                  delimiter
+-- @param lquotes String of characters to use as opening quotes (quoted strings
+--                in str will be considered one substring)
+-- @param rquotes String of characters to use as closing quotes
+-- @return Array of strings, one for each substring that was separated out
 function split(str, delim, end_delim, lquotes, rquotes)
     -- handle arguments {{{
     delim = "["..(delim or DELIM).."]"
@@ -83,7 +132,12 @@ function split(str, delim, end_delim, lquotes, rquotes)
 end
 -- }}}
 
--- basename() - returns the basename of a file {{{
+-- basename {{{
+--
+-- Returns the basename of a file (the part after the last directory separator).
+-- @param path Path to the file
+-- @param sep Directory separator (optional, defaults to PATH_SEP)
+-- @return The basename of the file
 function basename(path, sep)
     sep = sep or PATH_SEP
     if not path:find(sep) then return path end
@@ -91,7 +145,12 @@ function basename(path, sep)
 end
 -- }}}
 
--- dirname() - returns the dirname of a file {{{
+-- dirname {{{
+--
+-- Returns the dirname of a file (the part before the last directory separator).
+-- @param path Path to the file
+-- @param sep Directory separator (optional, defaults to PATH_SEP)
+-- @return The dirname of the file
 function dirname(path, sep)
     sep = sep or PATH_SEP
     if not path:find(sep) then return "." end
@@ -99,7 +158,14 @@ function dirname(path, sep)
 end
 -- }}}
 
--- str_to_int() - converts a number to a low-level int {{{
+-- str_to_int {{{
+--
+-- Converts a number to a low-level int.
+-- @param str String representation of the int
+-- @param bytes Number of bytes in an int (defaults to INT_BYTES)
+-- @param endian Which endianness to use (big, little, host, network) (defaultsi
+--               to ENDIANNESS)
+-- @return A string whose first INT_BYTES characters make a low-level int
 function str_to_int(str, bytes, endian)
     bytes = bytes or INT_BYTES
     endian = endian or ENDIANNESS
@@ -114,7 +180,12 @@ function str_to_int(str, bytes, endian)
 end
 -- }}}
 
--- int_to_str() - converts a low-level int to a number {{{
+-- int_to_str {{{
+--
+-- Converts a low-level int to a number.
+-- @param int String whose bytes correspond to the bytes of a low-level int
+-- @param endian Endianness of the int argument (defaults to ENDIANNESS)
+-- @return String representation of the low-level int argument
 function int_to_str(int, endian)
     endian = endian or ENDIANNESS
     local ret = 0
@@ -128,7 +199,11 @@ function int_to_str(int, endian)
 end
 -- }}}
 
--- ip_str_to_int() - converts a string ip address to an int {{{
+-- ip_str_to_int {{{
+--
+-- Converts a string IP address to a low-level int.
+-- @param ip_str String representation of an IP address
+-- @return Low-level int representation of that IP address
 function ip_str_to_int(ip_str)
     local i = 3
     local ret = 0
@@ -140,7 +215,11 @@ function ip_str_to_int(ip_str)
 end
 -- }}}
 
--- ip_int_to_str() - converts an int to a string ip address {{{
+-- ip_int_to_str {{{
+--
+-- Converts an int to a string IP address.
+-- @param ip_int Low-level int representation of an IP address
+-- @return String representation of that IP address
 function ip_int_to_str(ip_int)
     local ip = {}
     for i = 3, 0, -1 do
@@ -152,7 +231,12 @@ function ip_int_to_str(ip_int)
 end
 -- }}}
 
--- get_unique_filename() - returns a unique filename {{{
+-- get_unique_filename {{{
+--
+-- Returns a unique filename.
+-- @param filename Filename to start with
+-- @return Filename (same as the one we started with, except possibly with some
+--         numbers appended) which does not currently exist on the filesystem
 function get_unique_filename(filename)
     if not exists(filename) then return filename end
 
@@ -166,7 +250,12 @@ function get_unique_filename(filename)
 end
 -- }}}
 
--- try_call() - call a function, if it exists {{{
+-- try_call {{{
+--
+-- Call a function, if it exists.
+-- @param fn Function to try to call
+-- @param ... Arguments to fn
+-- @return The return values of fn, if it was successfully called
 function try_call(fn, ...)
     if base.type(fn) == "function" then
         return fn(...)
@@ -174,7 +263,13 @@ function try_call(fn, ...)
 end
 -- }}}
 
--- try_call_warn() - same as try_call, but complain if not {{{
+-- try_call_warn {{{
+--
+-- Same as try_call, but complain if the function doesn't exist.
+-- @param msg Warning message to use if the function doesn't exist
+-- @param fn Function to try to call
+-- @param ... Arguments to fn
+-- @return The return values of fn, if it was successfully called
 function try_call_warn(msg, fn, ...)
     if base.type(fn) == "function" then
         return fn(...)
@@ -184,30 +279,9 @@ function try_call_warn(msg, fn, ...)
 end
 -- }}}
 
--- parse_user() - gets the various parts of a full username {{{
--- args: user - usermask (i.e. returned in the from field of a callback)
--- return: nick, username, hostname (these can be nil if nonexistant)
-function parse_user(user)
-    local found, bang, nick = user:find("^([^!]*)!")
-    if found then 
-        user = user:sub(bang + 1)
-    else
-        return user
-    end
-    local found, equals = user:find("^.=")
-    if found then
-        user = user:sub(3)
-    end
-    local found, at, username = user:find("^([^@]*)@")
-    if found then
-        return nick, username, user:sub(at + 1)
-    else
-        return nick, user
-    end
-end
--- }}}
-
--- value_iter() - iterate just over values of a table {{{
+-- value_iter {{{
+--
+-- Iterator to iterate over just the values of a table.
 function value_iter(state, arg, pred)
     for k, v in base.pairs(state) do
         if arg == v then arg = k end
