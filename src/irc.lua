@@ -703,10 +703,10 @@ end
 
 -- information requests {{{
 -- server_version {{{
-function server_version(cb, server)
-    -- apparently the optional server parameter isn't supported?
-    --server = server or serverinfo.host
-    server = serverinfo.host
+function server_version(cb)
+    -- apparently the optional server parameter isn't supported for servers
+    -- which you are not directly connected to (freenode specific?)
+    local server = serverinfo.host
     if not icallbacks.serverversion[server] then
         icallbacks.serverversion[server] = {cb}
         send("VERSION", server)
@@ -731,10 +731,10 @@ end
 -- }}}
 
 -- server_time {{{
-function server_time(cb, server)
-    -- apparently the optional server parameter isn't supported?
-    --server = server or serverinfo.host
-    server = serverinfo.host
+function server_time(cb)
+    -- apparently the optional server parameter isn't supported for servers
+    -- which you are not directly connected to (freenode specific?)
+    local server = serverinfo.host
     if not icallbacks.servertime[server] then
         icallbacks.servertime[server] = {cb}
         send("TIME", server)
@@ -742,12 +742,6 @@ function server_time(cb, server)
         table.insert(icallbacks.servertime[server], cb)
     end
 end
--- }}}
-
--- trace {{{
---function trace(cb, server)
---    send("WHOWAS", "ekiM")
---end
 -- }}}
 -- }}}
 
