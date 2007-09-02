@@ -387,6 +387,23 @@ end
 -- }}}
 
 -- accessors {{{
+-- contains {{{
+---
+-- Test if a user is in the channel.
+-- @param self Channel object
+-- @param nick Nick to search for
+-- @return True if the nick is in the channel, false otherwise
+function contains(self, nick)
+    for member in self:each_member() do
+        local member_nick = member:gsub('@+', '')
+        if member_nick == nick then
+            return true
+        end
+    end
+    return false
+end
+-- }}}
+
 -- add_user() {{{
 function add_user(self, user, mode)
     mode = mode or ''
@@ -414,18 +431,6 @@ function change_status(self, user, on, mode)
             self._members[user] = user
         end
     end
-end
--- }}}
-
--- contains() {{{
-function contains(self, nick)
-    for member in self:each_member() do
-        local member_nick = member:gsub('@+', '')
-        if member_nick == nick then
-            return true
-        end
-    end
-    return false
 end
 -- }}}
 
