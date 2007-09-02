@@ -64,6 +64,7 @@ function parse_user(user)
 end
 -- }}}
 
+-- TODO: the rest of these shouldn't be public
 -- split {{{
 --
 -- Splits str into substrings based on several options.
@@ -200,6 +201,7 @@ end
 -- }}}
 
 -- ip_str_to_int {{{
+-- TODO: handle endianness here
 --
 -- Converts a string IP address to a low-level int.
 -- @param ip_str String representation of an IP address
@@ -216,6 +218,7 @@ end
 -- }}}
 
 -- ip_int_to_str {{{
+-- TODO: handle endianness here
 --
 -- Converts an int to a string IP address.
 -- @param ip_int Low-level int representation of an IP address
