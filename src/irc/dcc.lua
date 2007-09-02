@@ -1,3 +1,5 @@
+---
+-- Implementation of the DCC protocol
 -- initialization {{{
 local base =      _G
 local irc =       require 'irc'
@@ -9,6 +11,9 @@ local io =        require 'io'
 local string =    require 'string'
 -- }}}
 
+---
+-- This module implements the DCC protocol. File transfers (DCC SEND) are
+-- handled, but DCC CHAT is not, as of yet.
 module 'irc.dcc'
 
 -- defaults {{{
@@ -18,6 +23,13 @@ LAST_PORT = 5000
 
 -- private functions {{{
 -- send_file {{{
+--
+-- Sends a file to a remote user, after that user has accepted our DCC SEND
+-- invitation
+-- @param sock        Socket to send the file on
+-- @param file        Lua file object corresponding to the file we want to send
+-- @param size        Size of the file to send
+-- @param packet_size Size of the packets to send the file in
 local function send_file(sock, file, size, packet_size)
     local bytes = 0
     while true do
@@ -45,6 +57,14 @@ end
 -- }}}
 
 -- handle_connect {{{
+--
+-- Handle the connection attempt by a remote user to get our file. Basically
+-- just swaps out the server socket we were listening on for a client socket
+-- that we can send data on
+-- @param ssock Server socket that the remote user connected to
+-- @param file  Lua file object corresponding to the file we want to send
+-- @param size  Size of the file to send
+-- @param packet_size Size of the packets to send the file in
 local function handle_connect(ssock, file, size, packet_size)
     packet_size = packet_size or 1024
     local sock = ssock:accept()
@@ -60,6 +80,12 @@ end
 -- }}}
 
 -- accept_file {{{
+--
+-- Accepts a file from a remote user which has offered it to us.
+-- @param sock        Socket to receive the file on
+-- @param file        Lua file object corresponding to the file we want to save
+-- @param size        Size of the file we are receiving
+-- @param packet_size Size of the packets to receive the file in
 local function accept_file(sock, file, size, packet_size)
     local bytes = 0
     while true do
@@ -82,6 +108,13 @@ end
 
 -- public functions {{{
 -- send {{{
+---
+-- Offers a file to a remote user.
+-- @param nick     User to offer the file to
+-- @param filename Filename to offer
+-- @param port     Port to accept connections on (optional, defaults to
+--                 choosing an available port between FIRST_PORT and LAST_PORT
+--                 above)
 function send(nick, filename, port)
     port = port or FIRST_PORT
     local sock = base.assert(socket.tcp())
@@ -107,6 +140,14 @@ end
 -- }}}
 
 -- accept {{{
+--
+-- Accepts a file offer from a remote user. Called when the on_dcc callback
+-- retuns true.
+-- @param filename    Name to save the file as
+-- @param address     IP address of the remote user
+-- @param port        Port to connect to at the remote user
+-- @param size        Size of the file that the remote user is offering
+-- @param packet_size Size of the packets the remote user will be sending
 function accept(filename, address, port, size, packet_size)
     packet_size = packet_size or 1024
     local sock = base.assert(socket.tcp())
