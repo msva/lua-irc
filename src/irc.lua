@@ -617,18 +617,31 @@ end
 
 -- public functions {{{
 -- server commands {{{
--- connect() - start a connection to the irc server {{{
--- args: network  - address of the irc network to connect to
---       port     - port to connect to
---       pass     - irc server password (if required)
---       nick     - nickname to connect as
---       username - username to connect with
---       realname - realname to connect with
---       timeout  - amount of time in seconds to wait before dropping an idle
---                  connection
--- notes: this function uses a table and named arguments. defaults are specified
---        by the capitalized versions of the arguments at the top of this file.
---        all args are optional.
+-- connect {{{
+---
+-- Start a connection to the irc server.
+-- @param args Table of named arguments containing connection parameters.
+--             Defaults are the all-caps versions of these parameters given
+--             at the top of the file, and are overridable by setting them
+--             as well, i.e. <pre>irc.NETWORK = irc.freenode.net</pre>
+--             Possible options are:
+--             <ul>
+--             <li><i>network:</i>  address of the irc network to connect to
+--                                  (default: 'localhost')</li>
+--             <li><i>port:</i>     port to connect to
+--                                  (default: '6667')</li>
+--             <li><i>pass:</i>     irc server password
+--                                  (default: don't send)</li>
+--             <li><i>nick:</i>     nickname to connect as
+--                                  (default: 'luabot')</li>
+--             <li><i>username:</i> username to connect with
+--                                  (default: 'LuaIRC')</li>
+--             <li><i>realname:</i> realname to connect with
+--                                  (default: 'LuaIRC')</li>
+--             <li><i>timeout:</i>  amount of time in seconds to wait before
+--                                  dropping an idle connection
+--                                  (default: '60')</li>
+--             </ul>
 function connect(args)
     local network = args.network or NETWORK
     local port = args.port or PORT
@@ -649,8 +662,10 @@ function connect(args)
 end
 -- }}}
 
--- quit() - close the connection to the irc server {{{
--- args: message - quit message (optional)
+-- quit {{{
+---
+-- Close the connection to the irc server.
+-- @param message Quit message (optional, defaults to 'Leaving')
 function quit(message)
     message = message or "Leaving"
     send("QUIT", message)
@@ -658,8 +673,10 @@ function quit(message)
 end
 -- }}}
 
--- join() - join a channel {{{
--- args: channel - channel to join (required)
+-- join {{{
+---
+-- Join a channel.
+-- @param channel Channel to join
 function join(channel)
     if not channel then return end
     serverinfo.channels[channel] = Channel.new(channel)
@@ -667,8 +684,10 @@ function join(channel)
 end
 -- }}}
 
--- part() - leave a channel {{{
--- args: channel - channel to leave (required)
+-- part {{{
+---
+-- Leave a channel.
+-- @param channel Channel to leave
 function part(channel)
     if not channel then return end
     serverinfo.channels[channel] = nil
@@ -676,9 +695,11 @@ function part(channel)
 end
 -- }}}
 
--- say() - send a message to a user or channel {{{
--- args: name    - user or channel to send the message to
---       message - message to send
+-- say {{{
+---
+-- Send a message to a user or channel.
+-- @param name User or channel to send the message to
+-- @param message Message to send
 function say(name, message)
     if not name then return end
     message = message or ""
@@ -686,9 +707,11 @@ function say(name, message)
 end
 -- }}}
 
--- notice() - send a notice to a user or channel {{{
--- args: name    - user or channel to send the notice to
---       message - message to send
+-- notice {{{
+---
+-- Send a notice to a user or channel.
+-- @param name User or channel to send the notice to
+-- @param message Message to send
 function notice(name, message)
     if not name then return end
     message = message or ""
@@ -696,9 +719,11 @@ function notice(name, message)
 end
 -- }}}
 
--- act() - perform a /me action {{{
--- args: name   - user or channel to send the action to
---       action - action to send
+-- act {{{
+---
+-- Perform a /me action.
+-- @param name User or channel to send the action to
+-- @param action Action to send
 function act(name, action)
     if not name then return end
     action = action or ""
