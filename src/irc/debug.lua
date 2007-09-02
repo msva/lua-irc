@@ -46,6 +46,7 @@ end
 -- }}}
 
 -- message {{{
+-- TODO: disable color when we are writing to a file
 --
 -- Output a debug message.
 -- @param msg_type Arbitrary string corresponding to the type of message
