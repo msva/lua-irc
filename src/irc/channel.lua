@@ -404,6 +404,10 @@ function contains(self, nick)
 end
 -- }}}
 
+-- TODO: these four need to be made private at minimum (they are here for the
+-- main irc module to access things), but they really should probably be
+-- refactored out or something. definitely shouldn't be part of the public
+-- interface.
 -- add_user() {{{
 function add_user(self, user, mode)
     mode = mode or ''
