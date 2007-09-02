@@ -1,3 +1,5 @@
+---
+-- This module holds various constants used by the IRC protocol.
 module "irc.constants"
 
 -- protocol constants {{{
