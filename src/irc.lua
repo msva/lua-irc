@@ -502,7 +502,7 @@ function ctcp_handlers.on_dcc(from, to, message)
     local type, argument, address, port, size = base.unpack(misc.split(message, " ", nil, '"', '"'))
     if type == "SEND" then
         if misc.try_call(on_dcc, from, to, argument, address, port, size) then
-            dcc.accept(argument, address, port, size)
+            dcc.accept(argument, address, port)
         end
     elseif type == "CHAT" then
         -- TODO: implement this? do people ever use this?

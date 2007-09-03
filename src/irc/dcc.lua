@@ -23,17 +23,13 @@ LAST_PORT = 5000
 
 -- private functions {{{
 -- send_file {{{
--- TODO: no reason to be sending the size parameter all over the place when we
--- only need it in this function. also, should probably seek to the beginning
--- of the file before sending it.
 --
 -- Sends a file to a remote user, after that user has accepted our DCC SEND
 -- invitation
 -- @param sock        Socket to send the file on
 -- @param file        Lua file object corresponding to the file we want to send
--- @param size        Size of the file to send
 -- @param packet_size Size of the packets to send the file in
-local function send_file(sock, file, size, packet_size)
+local function send_file(sock, file, packet_size)
     local bytes = 0
     while true do
         local packet = file:read(packet_size)
@@ -49,7 +45,6 @@ local function send_file(sock, file, size, packet_size)
                 break
             end
         end
-        if bytes >= size then break end
         coroutine.yield(true)
     end
     file:close()
@@ -66,9 +61,8 @@ end
 -- that we can send data on
 -- @param ssock Server socket that the remote user connected to
 -- @param file  Lua file object corresponding to the file we want to send
--- @param size  Size of the file to send
 -- @param packet_size Size of the packets to send the file in
-local function handle_connect(ssock, file, size, packet_size)
+local function handle_connect(ssock, file, packet_size)
     packet_size = packet_size or 1024
     local sock = ssock:accept()
     sock:settimeout(0.1)
@@ -76,7 +70,7 @@ local function handle_connect(ssock, file, size, packet_size)
     irc._unregister_socket(ssock, 'r')
     irc._register_socket(sock, 'w',
                          coroutine.wrap(function(sock)
-                             return send_file(sock, file, size, packet_size)
+                             return send_file(sock, file, packet_size)
                          end))
     return true
 end
@@ -87,9 +81,8 @@ end
 -- Accepts a file from a remote user which has offered it to us.
 -- @param sock        Socket to receive the file on
 -- @param file        Lua file object corresponding to the file we want to save
--- @param size        Size of the file we are receiving
 -- @param packet_size Size of the packets to receive the file in
-local function accept_file(sock, file, size, packet_size)
+local function accept_file(sock, file, packet_size)
     local bytes = 0
     while true do
         local packet, err, partial_packet = sock:receive(packet_size)
@@ -133,7 +126,7 @@ function send(nick, filename, port)
     file:seek("set")
     irc._register_socket(sock, 'r',
                          coroutine.wrap(function(sock)
-                             return handle_connect(sock, file, size)
+                             return handle_connect(sock, file)
                          end))
     filename = misc.basename(filename)
     if filename:find(" ") then filename = '"' .. filename .. '"' end
@@ -150,9 +143,8 @@ end
 -- @param filename    Name to save the file as
 -- @param address     IP address of the remote user
 -- @param port        Port to connect to at the remote user
--- @param size        Size of the file that the remote user is offering
 -- @param packet_size Size of the packets the remote user will be sending
-function accept(filename, address, port, size, packet_size)
+function accept(filename, address, port, packet_size)
     packet_size = packet_size or 1024
     local sock = base.assert(socket.tcp())
     base.assert(sock:connect(misc.ip_int_to_str(address), port))
@@ -160,7 +152,7 @@ function accept(filename, address, port, size, packet_size)
     local file = base.assert(io.open(misc.get_unique_filename(filename), "w"))
     irc._register_socket(sock, 'r',
                          coroutine.wrap(function(sock)
-                             return accept_file(sock, file, size, packet_size)
+                             return accept_file(sock, file, packet_size)
                          end))
 end
 -- }}}
