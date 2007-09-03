@@ -46,7 +46,6 @@ end
 -- }}}
 
 -- message {{{
--- TODO: disable color when we are writing to a file
 --
 -- Output a debug message.
 -- @param msg_type Arbitrary string corresponding to the type of message
@@ -56,7 +55,7 @@ end
 function message(msg_type, msg, color)
     if ON then
         local endcolor = ""
-        if COLOR then
+        if COLOR and out_file == io.stdout then
             color = color or "\027[1;30m"
             endcolor = "\027[0m"
         else
