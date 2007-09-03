@@ -44,6 +44,7 @@ local requestinfo = {whois = {}}
 local handlers = {}
 local ctcp_handlers = {}
 local serverinfo = {}
+local ip = nil
 -- }}}
 
 -- defaults {{{
@@ -934,7 +935,16 @@ end
 -- @return A string representation of the local IP address that the IRC server
 --         connection is communicating on
 function get_ip()
-    return (irc_sock:getsockname())
+    return (ip or irc_sock:getsockname())
+end
+-- }}}
+
+-- set_ip {{{
+---
+-- Set the local IP manually (to allow for NAT workarounds)
+-- @param new_ip IP address to set
+function set_ip(new_ip)
+    ip = new_ip
 end
 -- }}}
 
