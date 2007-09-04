@@ -1,7 +1,6 @@
 Before next release - 0.3
 ===================
 - Document available callbacks
-- Rework callback system to use registration rather than just assigning to stuff inside the irc module, so that we can do things like have multiple handlers automatically
 
 For the future
 ==============
