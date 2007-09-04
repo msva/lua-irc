@@ -15,9 +15,10 @@ module "irc.ctcp"
 --
 -- Applies low level quoting to a string (escaping characters which are illegal
 -- to appear in an IRC packet).
--- @param str String to quote
+-- @param ... Strings to quote together, space separated
 -- @return Quoted string
-function _low_quote(str)
+function _low_quote(...)
+    local str = table.concat({...}, " ")
     return str:gsub("[%z\n\r\020]", {["\000"] = "\0200",
                                      ["\n"]   = "\020n",
                                      ["\r"]   = "\020r",
@@ -45,9 +46,10 @@ end
 --
 -- Applies CTCP quoting to a block of text which has been identified as CTCP
 -- data (by the calling program).
--- @param str String to apply CTCP quoting to
+-- @param ... Strings to apply CTCP quoting to together, space separated
 -- @return String with CTCP quoting applied
-function _ctcp_quote(str)
+function _ctcp_quote(...)
+    local str = table.concat({...}, " ")
     local ret = str:gsub("[\001\\]", {["\001"] = "\\a",
                                       ["\\"]   = "\\\\"})
     return "\001" .. ret .. "\001"
