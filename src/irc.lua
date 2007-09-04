@@ -63,13 +63,13 @@ OUTFILE = nil         -- file to send debug output to - nil is stdout
 local function main_loop_iter()
     if #rsockets == 0 and #wsockets == 0 then return false end
     local rready, wready, err = socket.select(rsockets, wsockets)
-    if err then irc_debug.err(err); return false; end
+    if err then irc_debug._err(err); return false; end
 
     for _, sock in base.ipairs(rready) do
         local cb = socket.protect(rcallbacks[sock])
         local ret, err = cb(sock)
         if not ret then
-            irc_debug.warn("socket error: " .. err)
+            irc_debug._warn("socket error: " .. err)
             _unregister_socket(sock, 'r')
         end
     end
@@ -78,7 +78,7 @@ local function main_loop_iter()
         local cb = socket.protect(wcallbacks[sock])
         local ret, err = cb(sock)
         if not ret then
-            irc_debug.warn("socket error: " .. err)
+            irc_debug._warn("socket error: " .. err)
             _unregister_socket(sock, 'w')
         end
     end
@@ -96,11 +96,11 @@ end
 -- incoming_message {{{
 local function incoming_message(sock)
     local raw_msg = socket.try(sock:receive())
-    irc_debug.message("RECV", raw_msg)
-    local msg = message.parse(raw_msg)
-    misc.try_call_warn("Unhandled server message: " .. msg.command,
-                       handlers["on_" .. msg.command:lower()],
-                       (misc.parse_user(msg.from)), base.unpack(msg.args))
+    irc_debug._message("RECV", raw_msg)
+    local msg = message._parse(raw_msg)
+    misc._try_call_warn("Unhandled server message: " .. msg.command,
+                        handlers["on_" .. msg.command:lower()],
+                        (misc.parse_user(msg.from)), base.unpack(msg.args))
     return true
 end
 -- }}}
