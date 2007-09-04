@@ -151,8 +151,9 @@ end
 --                 above)
 function send(nick, filename, port)
     port = port or FIRST_PORT
-    local sock = base.assert(socket.tcp())
+    local sock
     repeat
+        sock = base.assert(socket.tcp())
         err, msg = sock:bind('*', port)
         port = port + 1
     until msg ~= "address already in use" and port <= LAST_PORT + 1
