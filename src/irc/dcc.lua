@@ -3,6 +3,8 @@
 -- initialization {{{
 local base =      _G
 local irc =       require 'irc'
+local ctcp =      require 'irc.ctcp'
+local c =         ctcp._ctcp_quote
 local irc_debug = require 'irc.debug'
 local misc =      require 'irc.misc'
 local socket =    require 'socket'
@@ -153,8 +155,7 @@ function send(nick, filename, port)
                          end))
     filename = misc._basename(filename)
     if filename:find(" ") then filename = '"' .. filename .. '"' end
-    irc.send("PRIVMSG", nick, {"DCC SEND " .. filename .. " " ..
-             ip .. " " .. port - 1 .. " " .. size})
+    irc.send("PRIVMSG", nick, c("DCC", "SEND", filename, ip, port - 1, size))
 end
 -- }}}
 -- }}}
