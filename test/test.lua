@@ -104,6 +104,11 @@ local dcc = require "irc.dcc"
 
 irc.DEBUG = true
 
+local ip_prog = io.popen("get_ip")
+local ip = ip_prog:read()
+ip_prog:close()
+irc.set_ip(ip)
+
 local function print_state()
     for chan in irc.channels() do
         print(chan..": Channel ops: "..table.concat(chan:ops(), " "))
