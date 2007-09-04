@@ -10,6 +10,8 @@ MOD_LUAS = src/irc/channel.lua \
            src/irc/debug.lua \
            src/irc/message.lua \
            src/irc/misc.lua
+TEST_LUAS = test/test.lua
+VERSION = $(shell grep '^_VERSION =' $(MAIN_LUA) | sed "s/_VERSION = '\(.*\)'/\1/" | tr ' ' '-')
 
 build :
 
@@ -26,3 +28,12 @@ doc : $(MAIN_LUA) $(MOD_LUAS)
 
 clean :
 	rm -rf $(DOC_DIR)
+
+dist : $(VERSION).tar.gz
+
+$(VERSION).tar.gz : $(MAIN_LUA) $(MOD_LUAS) $(TEST_LUAS) doc Makefile README TODO
+	@echo "Creating $(VERSION).tar.gz"
+	@mkdir $(VERSION)
+	@cp -r src test doc Makefile README TODO $(VERSION)
+	@tar czf $(VERSION).tar.gz $(VERSION)
+	@rm -rf $(VERSION)
