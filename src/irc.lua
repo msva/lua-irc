@@ -4,6 +4,8 @@
 -- initialization {{{
 local base =      _G
 local constants = require 'irc.constants'
+local ctcp =      require 'irc.ctcp'
+local c =         ctcp._ctcp_quote
 local irc_debug = require 'irc.debug'
 local message =   require 'irc.message'
 local misc =      require 'irc.misc'
@@ -239,7 +241,7 @@ function handlers.on_privmsg(from, to, msg)
             if base.type(ctcp_handlers[cb]) == "function" then
                 ctcp_handlers[cb](from, to, table.concat(words, " "))
             else
-                notice(from, {"ERRMSG Unknown query: " .. received_command})
+                notice(from, c("ERRMSG", "Unknown query: " .. received_command))
             end
             -- }}}
         else
@@ -517,25 +519,25 @@ end
 
 -- on_version {{{
 function ctcp_handlers.on_version(from, to)
-    notice(from, {"VERSION " .. _VERSION .. " running under " .. base._VERSION .. " with " .. socket._VERSION})
+    notice(from, c("VERSION", _VERSION .. " running under " .. base._VERSION .. " with " .. socket._VERSION))
 end
 -- }}}
 
 -- on_errmsg {{{
 function ctcp_handlers.on_errmsg(from, to, message)
-    notice(from, {"ERRMSG " .. message .. "No error has occurred"})
+    notice(from, c("ERRMSG", message .. "No error has occurred"))
 end
 -- }}}
 
 -- on_ping {{{
 function ctcp_handlers.on_ping(from, to, timestamp)
-    notice(from, {"PING " .. timestamp})
+    notice(from, c("PING", timestamp))
 end
 -- }}}
 
 -- on_time {{{
 function ctcp_handlers.on_time(from, to)
-    notice(from, {"TIME " .. os.date()})
+    notice(from, c("TIME", os.date()))
 end
 -- }}}
 -- }}}
@@ -551,7 +553,7 @@ function ctcp_handlers.on_rpl_version(from, to, version)
     local lfrom = from:lower()
     local cb = table.remove(icallbacks.ctcp_version[lfrom], 1)
     cb({version = version, nick = from})
-    if #icallbacks.ctcp_version[lfrom] > 0 then say(from, {"VERSION"})
+    if #icallbacks.ctcp_version[lfrom] > 0 then say(from, c("VERSION"))
     else icallbacks.ctcp_version[lfrom] = nil
     end
 end
@@ -568,7 +570,7 @@ function ctcp_handlers.on_rpl_ping(from, to, timestamp)
     local lfrom = from:lower()
     local cb = table.remove(icallbacks.ctcp_ping[lfrom], 1)
     cb({time = os.time() - timestamp, nick = from})
-    if #icallbacks.ctcp_ping[lfrom] > 0 then say(from, {"PING " .. os.time()})
+    if #icallbacks.ctcp_ping[lfrom] > 0 then say(from, c("PING", os.time()))
     else icallbacks.ctcp_ping[lfrom] = nil
     end
 end
@@ -579,7 +581,7 @@ function ctcp_handlers.on_rpl_time(from, to, time)
     local lfrom = from:lower()
     local cb = table.remove(icallbacks.ctcp_time[lfrom], 1)
     cb({time = time, nick = from})
-    if #icallbacks.ctcp_time[lfrom] > 0 then say(from, {"TIME"})
+    if #icallbacks.ctcp_time[lfrom] > 0 then say(from, c("TIME"))
     else icallbacks.ctcp_time[lfrom] = nil
     end
 end
@@ -747,7 +749,7 @@ end
 function act(name, action)
     if not name then return end
     action = action or ""
-    send("PRIVMSG", name, {"ACTION", action})
+    send("PRIVMSG", name, c("ACTION", action))
 end
 -- }}}
 -- }}}
@@ -850,7 +852,7 @@ function ctcp_ping(cb, nick)
     nick = nick:lower()
     if not icallbacks.ctcp_ping[nick] then
         icallbacks.ctcp_ping[nick] = {cb}
-        say(nick, {"PING " .. os.time()})
+        say(nick, c("PING", os.time()))
     else
         table.insert(icallbacks.ctcp_ping[nick], cb)
     end
@@ -871,7 +873,7 @@ function ctcp_time(cb, nick)
     nick = nick:lower()
     if not icallbacks.ctcp_time[nick] then
         icallbacks.ctcp_time[nick] = {cb}
-        say(nick, {"TIME"})
+        say(nick, c("TIME"))
     else
         table.insert(icallbacks.ctcp_time[nick], cb)
     end
@@ -892,7 +894,7 @@ function ctcp_version(cb, nick)
     nick = nick:lower()
     if not icallbacks.ctcp_version[nick] then
         icallbacks.ctcp_version[nick] = {cb}
-        say(nick, {"VERSION"})
+        say(nick, c("VERSION"))
     else
         table.insert(icallbacks.ctcp_version[nick], cb)
     end
@@ -915,18 +917,10 @@ function send(command, ...)
     if not serverinfo.connected and not serverinfo.connecting then return end
     local message = command
     for i, v in base.ipairs({...}) do
-        local arg
-        -- passing a table in as an argument means to treat that table as a
-        -- CTCP command, so quote it appropriately
-        if base.type(v) == "string" then
-            arg = v
-        elseif base.type(v) == "table" then
-            arg = ctcp._ctcp_quote(table.concat(v, " "))
-        end
         if i == #{...} then
-            arg = ":" .. arg
+            v = ":" .. v
         end
-        message = message .. " " .. arg
+        message = message .. " " .. v
     end
     message = ctcp._low_quote(message)
     -- we just truncate for now. -2 to account for the \r\n
