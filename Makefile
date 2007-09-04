@@ -22,6 +22,7 @@ install :
 doc : $(MAIN_LUA) $(MOD_LUAS)
 	mkdir -p $(DOC_DIR)
 	$(LUADOC) --nofiles -d $(DOC_DIR) $(MAIN_LUA) $(MOD_LUAS)
+	@touch doc
 
 clean :
 	rm -rf $(DOC_DIR)
