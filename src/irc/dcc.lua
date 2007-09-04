@@ -24,6 +24,15 @@ LAST_PORT = 5000
 -- }}}
 
 -- private functions {{{
+-- debug_dcc {{{
+--
+-- Prints a debug message about DCC events similar to irc.debug.warn, etc.
+-- @param msg Debug message
+local function debug_dcc(msg)
+    irc_debug._message("DCC", msg, "\027[0;32m")
+end
+-- }}}
+
 -- send_file {{{
 --
 -- Sends a file to a remote user, after that user has accepted our DCC SEND
@@ -62,6 +71,7 @@ local function send_file(sock, file, packet_size)
         end
         coroutine.yield(true)
     end
+    debug_dcc("File completely sent")
     file:close()
     sock:close()
     irc._unregister_socket(sock, 'w')
@@ -78,6 +88,7 @@ end
 -- @param file  Lua file object corresponding to the file we want to send
 -- @param packet_size Size of the packets to send the file in
 local function handle_connect(ssock, file, packet_size)
+    debug_dcc("Offer accepted, beginning to send")
     packet_size = packet_size or 1024
     local sock = ssock:accept()
     sock:settimeout(0.1)
@@ -109,6 +120,7 @@ local function accept_file(sock, file, packet_size)
         file:write(packet)
         coroutine.yield(true)
     end
+    debug_dcc("File completely received")
     file:close()
     sock:close()
     irc._unregister_socket(sock, 'r')
@@ -127,6 +139,8 @@ end
 -- @param port        Port to connect to at the remote user
 -- @param packet_size Size of the packets the remote user will be sending
 function _accept(filename, address, port, packet_size)
+    debug_dcc("Accepting a DCC SEND request from " ..
+              misc._ip_int_to_str(address) .. ":" .. port)
     packet_size = packet_size or 1024
     local sock = base.assert(socket.tcp())
     base.assert(sock:connect(misc._ip_int_to_str(address), port))
@@ -169,6 +183,8 @@ function send(nick, filename, port)
                          end))
     filename = misc._basename(filename)
     if filename:find(" ") then filename = '"' .. filename .. '"' end
+    debug_dcc("Offering " .. filename .. " to " .. nick .. " from " ..
+              irc.get_ip() .. ":" .. port - 1)
     irc.send("PRIVMSG", nick, c("DCC", "SEND", filename, ip, port - 1, size))
 end
 -- }}}
