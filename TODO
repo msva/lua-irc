@@ -1,7 +1,6 @@
 Before next release
 ===================
 - Document available callbacks
-- Allow the user to set the socket ip (for dcc, etc) in case it's different from what we detect (behind a firewall, etc)
 - Rework the way irc.lua uses things from modules - there are quite a few things which shouldn't be part of the public user interface which are right now. Probably just use the leading underscore convention for right now, but hopefully a lot of that stuff can be refactored.
 - Rework the way CTCP quoting is handled throughout the code... the whole string/table thing is pretty ugly
 - Rework callback system to use registration rather than just assigning to stuff inside the irc module, so that we can do things like have multiple handlers automatically
