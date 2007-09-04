@@ -123,7 +123,7 @@ end
 -- Accepts a file offer from a remote user. Called when the on_dcc callback
 -- retuns true.
 -- @param filename    Name to save the file as
--- @param address     IP address of the remote user
+-- @param address     IP address of the remote user in low level int form
 -- @param port        Port to connect to at the remote user
 -- @param packet_size Size of the packets the remote user will be sending
 function _accept(filename, address, port, packet_size)
