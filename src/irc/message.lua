@@ -15,8 +15,8 @@ local table =     require 'table'
 -- This module contains parsing functions for IRC server messages.
 module 'irc.message'
 
--- local functions {{{
--- parse {{{
+-- internal functions {{{
+-- _parse {{{
 --
 -- Parse a server command.
 -- @param str Command to parse
@@ -32,9 +32,9 @@ module 'irc.message'
 --                             to the received command</li>
 --
 --         </ul>
-function parse(str)
+function _parse(str)
     -- low-level ctcp quoting {{{
-    str = ctcp.low_dequote(str)
+    str = ctcp._low_dequote(str)
     -- }}}
     -- parse the from field, if it exists (leading :) {{{
     local from = ""
@@ -52,12 +52,12 @@ function parse(str)
         if constants.replies[base.tonumber(command)] then
             command = constants.replies[base.tonumber(command)]
         else
-            irc_debug.warn("Unknown server reply: " .. command)
+            irc_debug._warn("Unknown server reply: " .. command)
         end
     end
     -- }}}
     -- get the args {{{
-    local args = misc.split(argstr, " ", ":")
+    local args = misc._split(argstr, " ", ":")
     -- the first arg in a reply is always your nick
     if reply then table.remove(args, 1) end
     -- }}}
