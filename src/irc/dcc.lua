@@ -38,7 +38,7 @@ local function send_file(sock, file, packet_size)
         local index = 1
         while true do
             sock:send(packet, index)
-            local new_bytes = misc.int_to_str(sock:receive(4))
+            local new_bytes = misc._int_to_str(sock:receive(4))
             if new_bytes ~= bytes then
                 index = packet_size - bytes + new_bytes + 1
             else
@@ -90,7 +90,7 @@ local function accept_file(sock, file, packet_size)
         if not packet then break end
         if packet:len() == 0 then break end
         bytes = bytes + packet:len()
-        sock:send(misc.str_to_int(bytes))
+        sock:send(misc._str_to_int(bytes))
         file:write(packet)
         coroutine.yield(true)
     end
@@ -98,6 +98,29 @@ local function accept_file(sock, file, packet_size)
     sock:close()
     irc._unregister_socket(sock, 'r')
     return true
+end
+-- }}}
+-- }}}
+
+-- internal functions {{{
+-- _accept {{{
+--
+-- Accepts a file offer from a remote user. Called when the on_dcc callback
+-- retuns true.
+-- @param filename    Name to save the file as
+-- @param address     IP address of the remote user
+-- @param port        Port to connect to at the remote user
+-- @param packet_size Size of the packets the remote user will be sending
+function _accept(filename, address, port, packet_size)
+    packet_size = packet_size or 1024
+    local sock = base.assert(socket.tcp())
+    base.assert(sock:connect(misc._ip_int_to_str(address), port))
+    sock:settimeout(0.1)
+    local file = base.assert(io.open(misc._get_unique_filename(filename), "w"))
+    irc._register_socket(sock, 'r',
+                         coroutine.wrap(function(sock)
+                             return accept_file(sock, file, packet_size)
+                         end))
 end
 -- }}}
 -- }}}
@@ -120,7 +143,7 @@ function send(nick, filename, port)
     until msg ~= "address already in use" and port <= LAST_PORT + 1
     base.assert(err, msg)
     base.assert(sock:listen(1))
-    local ip = misc.ip_str_to_int(irc.get_ip())
+    local ip = misc._ip_str_to_int(irc.get_ip())
     local file = base.assert(io.open(filename))
     local size = file:seek("end")
     file:seek("set")
@@ -128,32 +151,10 @@ function send(nick, filename, port)
                          coroutine.wrap(function(sock)
                              return handle_connect(sock, file)
                          end))
-    filename = misc.basename(filename)
+    filename = misc._basename(filename)
     if filename:find(" ") then filename = '"' .. filename .. '"' end
     irc.send("PRIVMSG", nick, {"DCC SEND " .. filename .. " " ..
              ip .. " " .. port - 1 .. " " .. size})
-end
--- }}}
-
--- accept {{{
--- TODO: this shouldn't be a public function
---
--- Accepts a file offer from a remote user. Called when the on_dcc callback
--- retuns true.
--- @param filename    Name to save the file as
--- @param address     IP address of the remote user
--- @param port        Port to connect to at the remote user
--- @param packet_size Size of the packets the remote user will be sending
-function accept(filename, address, port, packet_size)
-    packet_size = packet_size or 1024
-    local sock = base.assert(socket.tcp())
-    base.assert(sock:connect(misc.ip_int_to_str(address), port))
-    sock:settimeout(0.1)
-    local file = base.assert(io.open(misc.get_unique_filename(filename), "w"))
-    irc._register_socket(sock, 'r',
-                         coroutine.wrap(function(sock)
-                             return accept_file(sock, file, packet_size)
-                         end))
 end
 -- }}}
 -- }}}
