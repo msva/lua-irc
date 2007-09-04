@@ -110,7 +110,7 @@ end
 
 -- callback {{{
 local function callback(name, ...)
-    misc._try_call(user_handlers[name], ...)
+    return misc._try_call(user_handlers[name], ...)
 end
 -- }}}
 -- }}}
