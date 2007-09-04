@@ -1,4 +1,4 @@
-Before next release - 0.1
+Before next release - 0.3
 ===================
 - Document available callbacks
 - Rework the way CTCP quoting is handled throughout the code... the whole string/table thing is pretty ugly

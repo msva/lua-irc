@@ -15,7 +15,7 @@ local table =     require 'table'
 
 ---
 -- LuaIRC - IRC framework written in Lua
--- @release 0.02
+-- @release 0.2
 module 'irc'
 
 -- constants {{{
