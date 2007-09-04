@@ -914,17 +914,17 @@ function send(command, ...)
         if base.type(v) == "string" then
             arg = v
         elseif base.type(v) == "table" then
-            arg = ctcp.ctcp_quote(table.concat(v, " "))
+            arg = ctcp._ctcp_quote(table.concat(v, " "))
         end
         if i == #{...} then
             arg = ":" .. arg
         end
         message = message .. " " .. arg
     end
-    message = ctcp.low_quote(message)
+    message = ctcp._low_quote(message)
     -- we just truncate for now. -2 to account for the \r\n
     message = message:sub(1, constants.IRC_MAX_MSG - 2)
-    irc_debug.message("SEND", message)
+    irc_debug._message("SEND", message)
     irc_sock:send(message .. "\r\n")
 end
 -- }}}
@@ -957,10 +957,10 @@ end
 -- @see irc.channel
 function channels()
     return function(state, arg)
-               return misc.value_iter(state, arg,
-                                      function(v)
-                                          return v.join_complete
-                                      end)
+               return misc._value_iter(state, arg,
+                                       function(v)
+                                           return v.join_complete
+                                       end)
            end,
            serverinfo.channels,
            nil
