@@ -174,7 +174,12 @@ function send(nick, filename, port)
     base.assert(err, msg)
     base.assert(sock:listen(1))
     local ip = misc._ip_str_to_int(irc.get_ip())
-    local file = base.assert(io.open(filename))
+    local file, err = io.open(filename)
+    if not file then
+        irc_debug._warn(err)
+        sock:close()
+        return
+    end
     local size = file:seek("end")
     file:seek("set")
     irc._register_socket(sock, 'r',
