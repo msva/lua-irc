@@ -670,7 +670,7 @@ function connect(args)
     _register_socket(irc_sock, 'r', incoming_message)
     if args.pass then send("PASS", args.pass) end
     send("NICK", nick)
-    send("USER", username, (irc_sock:getsockname()), network, realname)
+    send("USER", username, get_ip(), network, realname)
     begin_main_loop()
 end
 -- }}}
