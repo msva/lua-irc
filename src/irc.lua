@@ -336,13 +336,13 @@ function handlers.on_rpl_namreply(from, chanmode, chan, userlist)
     base.assert(serverinfo.channels[chan],
                 "Received user information about unknown channel: " .. chan)
     serverinfo.channels[chan]._chanmode = constants.chanmodes[chanmode]
-    local users = misc.split(userlist)
+    local users = misc._split(userlist)
     for k,v in base.ipairs(users) do
         if v:sub(1, 1) == "@" or v:sub(1, 1) == "+" then
             local nick = v:sub(2)
-            serverinfo.channels[chan]:add_user(nick, v:sub(1, 1))
+            serverinfo.channels[chan]:_add_user(nick, v:sub(1, 1))
         else
-            serverinfo.channels[chan]:add_user(v)
+            serverinfo.channels[chan]:_add_user(v)
         end
     end
 end
@@ -355,7 +355,7 @@ function handlers.on_rpl_endofnames(from, chan)
     base.assert(serverinfo.channels[chan],
                 "Received user information about unknown channel: " .. chan)
     if not serverinfo.channels[chan].join_complete then
-        misc.try_call(on_me_join, serverinfo.channels[chan])
+        misc._try_call(on_me_join, serverinfo.channels[chan])
         serverinfo.channels[chan].join_complete = true
     end
 end
@@ -394,7 +394,7 @@ function handlers.on_rpl_endofmotd(from)
     if not serverinfo.connected then
         serverinfo.connected = true
         serverinfo.connecting = false
-        misc.try_call(on_connect)
+        misc._try_call(on_connect)
     end
 end
 -- }}}
@@ -414,7 +414,7 @@ function handlers.on_rpl_whoischannels(from, nick, channel_list)
     if not requestinfo.whois[nick].channels then
         requestinfo.whois[nick].channels = {}
     end
-    for _, channel in base.ipairs(misc.split(channel_list)) do
+    for _, channel in base.ipairs(misc._split(channel_list)) do
         table.insert(requestinfo.whois[nick].channels, channel)
     end
 end
