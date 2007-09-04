@@ -489,9 +489,9 @@ function ctcp_handlers.on_action(from, to, message)
     if to:sub(1, 1) == "#" then
         base.assert(serverinfo.channels[to],
         "Received channel msg from unknown channel: " .. to)
-        misc.try_call(on_channel_act, serverinfo.channels[to], from, message)
+        misc._try_call(on_channel_act, serverinfo.channels[to], from, message)
     else
-        misc.try_call(on_private_act, from, message)
+        misc._try_call(on_private_act, from, message)
     end
 end
 -- }}}
@@ -500,10 +500,10 @@ end
 -- TODO: can we not have this handler be registered unless the dcc module is
 -- loaded?
 function ctcp_handlers.on_dcc(from, to, message)
-    local type, argument, address, port, size = base.unpack(misc.split(message, " ", nil, '"', '"'))
+    local type, argument, address, port, size = base.unpack(misc._split(message, " ", nil, '"', '"'))
     if type == "SEND" then
-        if misc.try_call(on_dcc, from, to, argument, address, port, size) then
-            dcc.accept(argument, address, port)
+        if misc._try_call(on_dcc, from, to, argument, address, port, size) then
+            dcc._accept(argument, address, port)
         end
     elseif type == "CHAT" then
         -- TODO: implement this? do people ever use this?
