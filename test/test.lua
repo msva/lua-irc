@@ -118,14 +118,15 @@ local function print_state()
     end
 end
 
-function irc.on_connect()
+local function on_connect()
     print("Joining channel #doytest...")
     irc.join("#doytest")
     print("Joining channel #doytest2...")
     irc.join("#doytest2")
 end
+irc.register_callback("connect", on_connect)
 
-function irc.on_me_join(chan)
+local function on_me_join(chan)
     print("Join to " .. chan .. " complete.")
     print(chan .. ": Channel type: " .. chan.chanmode)
     if chan.topic.text and chan.topic.text ~= "" then
@@ -136,34 +137,40 @@ function irc.on_me_join(chan)
     irc.act(chan.name, "is here")
     print_state()
 end
+irc.register_callback("me_join", on_me_join)
 
-function irc.on_join(chan, user)
+local function on_join(chan, user)
     print("I saw a join to " .. chan)
     if tostring(user) ~= "doylua" then
         irc.say(tostring(chan), "Hi, " .. user)
     end
     print_state()
 end
+irc.register_callback("join", on_join)
 
-function irc.on_part(chan, user, part_msg)
+local function on_part(chan, user, part_msg)
     print("I saw a part from " .. chan .. " saying " .. part_msg)
     print_state()
 end
+irc.register_callback("part", on_part)
 
-function irc.on_nick_change(new_nick, old_nick)
+local function on_nick_change(new_nick, old_nick)
     print("I saw a nick change: "  ..  old_nick .. " -> " .. new_nick)
     print_state()
 end
+irc.register_callback("nick_change", on_nick_change)
 
-function irc.on_kick(chan, user)
+local function on_kick(chan, user)
     print("I saw a kick in " .. chan)
     print_state()
 end
+irc.register_callback("kick", on_kick)
 
-function irc.on_quit(chan, user)
+local function on_quit(chan, user)
     print("I saw a quit from " .. chan)
     print_state()
 end
+irc.register_callback("quit", on_quit)
 
 local function whois_cb(cb_data)
     print("WHOIS data for " .. cb_data.nick)
@@ -207,7 +214,7 @@ local function stime_cb(cb_data)
     print("Server time: " .. cb_data.time)
 end
 
-function irc.on_channel_msg(chan, from, msg)
+local function on_channel_msg(chan, from, msg)
     if from == "doy" then
         if msg == "leave" then
             irc.part(chan.name)
@@ -260,8 +267,9 @@ function irc.on_channel_msg(chan, from, msg)
         irc.say(chan.name, from .. ": " .. msg)
     end
 end
+irc.register_callback("channel_msg", on_channel_msg)
 
-function irc.on_private_msg(from, msg)
+local function on_private_msg(from, msg)
     if from == "doy" then
         if msg == "leave" then
             irc.quit("gone")
@@ -275,33 +283,41 @@ function irc.on_private_msg(from, msg)
         irc.say(from, msg)
     end
 end
+irc.register_callback("private_msg", on_private_msg)
 
-function irc.on_channel_act(chan, from, msg)
+local function on_channel_act(chan, from, msg)
     irc.act(chan.name, "jumps on " .. from)
 end
+irc.register_callback("channel_act", on_channel_act)
 
-function irc.on_private_act(from, msg)
+local function on_private_act(from, msg)
     irc.act(from, "jumps on you")
 end
+irc.register_callback("private_act", on_private_act)
 
-function irc.on_op(chan, from, nick)
+local function on_op(chan, from, nick)
     print_state()
 end
+irc.register_callback("op", on_op)
 
-function irc.on_deop(chan, from, nick)
+local function on_deop(chan, from, nick)
     print_state()
 end
+irc.register_callback("deop", on_deop)
 
-function irc.on_voice(chan, from, nick)
+local function on_voice(chan, from, nick)
     print_state()
 end
+irc.register_callback("voice", on_voice)
 
-function irc.on_devoice(chan, from, nick)
+local function on_devoice(chan, from, nick)
     print_state()
 end
+irc.register_callback("devoice", on_devoice)
 
-function irc.on_dcc()
+local function on_dcc()
     return true
 end
+irc.register_callback("dcc", on_dcc)
 
 irc.connect{network = "irc.freenode.net", nick = "doylua", pass = "doylua"}
