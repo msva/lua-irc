@@ -392,7 +392,7 @@ function set_key(self, key)
 end
 -- }}}
 
--- set_private() {{{
+-- set_private {{{
 ---
 -- Set the private state of a channel.
 -- @param self Channel object
