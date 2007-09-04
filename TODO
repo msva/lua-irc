@@ -1,7 +1,6 @@
 Before next release - 0.1
 ===================
 - Document available callbacks
-- Rework the way irc.lua uses things from modules - there are quite a few things which shouldn't be part of the public user interface which are right now. Probably just use the leading underscore convention for right now, but hopefully a lot of that stuff can be refactored.
 - Rework the way CTCP quoting is handled throughout the code... the whole string/table thing is pretty ugly
 - Rework callback system to use registration rather than just assigning to stuff inside the irc module, so that we can do things like have multiple handlers automatically
 
@@ -10,6 +9,7 @@ For the future
 - Reorganize the modules a bit more... we should have a src/irc/dcc/send.lua, src/irc/ctcp/base.lua, src/irc/ctcp/dcc.lua, etc. also, most (all?) of the handlers should be moved out of irc.lua into, say, src/irc/base.lua
 - Separate out the DCC module some more so that the callbacks aren't registered unless the module is loaded
 - Also separate out all of the CTCP commands/callbacks into the CTCP module
+- Rework the way irc.lua uses things from modules - the whole underscore but public thing... do i want to keep that? i suppose it's not horrible... look into this more
 - Implement callbacks for user mode changes (need to figure out how to represent users in the callback info)
 - Allow a server parameter in whois() so that the returned data can include the user's idle time
 - chan:ban()/chan:unban() should take a usermask, not a nick, or be able to generate a usermask from a nick, or something like that
