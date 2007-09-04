@@ -225,7 +225,7 @@ end
 
 -- on_privmsg {{{
 function handlers.on_privmsg(from, to, msg)
-    local msgs = ctcp._ctcp_split(msg, true)
+    local msgs = ctcp._ctcp_split(msg)
     for _, v in base.ipairs(msgs) do
         if base.type(v) == "string" then
             -- normal message {{{
@@ -258,7 +258,7 @@ end
 
 -- on_notice {{{
 function handlers.on_notice(from, to, msg)
-    local msgs = ctcp._ctcp_split(msg, true)
+    local msgs = ctcp._ctcp_split(msg)
     for _, v in base.ipairs(msgs) do
         if base.type(v) == "string" then
             -- normal message {{{
