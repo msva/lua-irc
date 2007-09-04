@@ -98,6 +98,75 @@ end
 -- }}}
 -- }}}
 
+-- internal methods {{{
+-- TODO: is there a better way to do this? also, storing op/voice as initial
+-- substrings of the username is just ugly
+-- _add_user {{{
+--
+-- Add a user to the channel's internal user list.
+-- @param self Channel object
+-- @param user Nick of the user to add
+-- @param mode Mode (op/voice) of the user, in symbolic form (@/+)
+function _add_user(self, user, mode)
+    mode = mode or ''
+    self._members[user] = mode .. user
+end
+-- }}}
+
+-- _remove_user {{{
+--
+-- Remove a user from the channel's internal user list.
+-- @param self Channel object
+-- @param user Nick of the user to remove
+function _remove_user(self, user)
+    self._members[user] = nil
+end
+-- }}}
+
+-- _change_status {{{
+--
+-- Change the op/voice status of a user in the channel's internal user list.
+-- @param self Channel object
+-- @param user Nick of the user to affect
+-- @param on   True if the mode is being set, false if it's being unset
+-- @param mode 'o' for op, 'v' for voice
+function _change_status(self, user, on, mode)
+    if on then
+        if mode == 'o' then
+            self._members[user] = '@' .. user
+        elseif mode == 'v' then
+            self._members[user] = '+' .. user
+        end
+    else
+        if (mode == 'o' and self._members[user]:sub(1, 1) == '@') or
+           (mode == 'v' and self._members[user]:sub(1, 1) == '+') then
+            self._members[user] = user
+        end
+    end
+end
+-- }}}
+
+-- _change_nick {{{
+--
+-- Change the nick of a user in the channel's internal user list.
+-- @param self     Channel object
+-- @param old_nick User's old nick
+-- @param new_nick User's new nick
+function _change_nick(self, old_nick, new_nick)
+    for member in self:each_member() do
+        local member_nick = member:gsub('@+', '')
+        if member_nick == old_nick then
+            local mode = self._members[old_nick]:sub(1, 1)
+            if mode ~= '@' and mode ~= '+' then mode = "" end
+            self._members[old_nick] = nil
+            self._members[new_nick] = mode .. new_nick
+            break
+        end
+    end
+end
+-- }}}
+-- }}}
+
 -- constructor {{{
 ---
 -- Creates a new Channel object.
@@ -117,10 +186,10 @@ end
 -- @param self Channel object
 function each_op(self)
     return function(state, arg)
-               return misc.value_iter(state, arg,
-                                      function(v)
-                                          return v:sub(1, 1) == "@"
-                                      end)
+               return misc._value_iter(state, arg,
+                                       function(v)
+                                           return v:sub(1, 1) == "@"
+                                       end)
            end,
            self._members,
            nil
@@ -133,10 +202,10 @@ end
 -- @param self Channel object
 function each_voice(self)
     return function(state, arg)
-               return misc.value_iter(state, arg,
-                                      function(v)
-                                          return v:sub(1, 1) == "+"
-                                      end)
+               return misc._value_iter(state, arg,
+                                       function(v)
+                                           return v:sub(1, 1) == "+"
+                                       end)
            end,
            self._members,
            nil
@@ -149,11 +218,11 @@ end
 -- @param self Channel object
 function each_user(self)
     return function(state, arg)
-               return misc.value_iter(state, arg,
-                                      function(v)
-                                          return v:sub(1, 1) ~= "@" and
-                                                 v:sub(1, 1) ~= "+"
-                                      end)
+               return misc._value_iter(state, arg,
+                                       function(v)
+                                           return v:sub(1, 1) ~= "@" and
+                                                  v:sub(1, 1) ~= "+"
+                                       end)
            end,
            self._members,
            nil
@@ -165,7 +234,7 @@ end
 -- Iterator over all users in the channel
 -- @param self Channel object
 function each_member(self)
-    return misc.value_iter, self._members, nil
+    return misc._value_iter, self._members, nil
 end
 -- }}}
 -- }}}
@@ -400,55 +469,6 @@ function contains(self, nick)
         end
     end
     return false
-end
--- }}}
-
--- TODO: these four need to be made private at minimum (they are here for the
--- main irc module to access things), but they really should probably be
--- refactored out or something. definitely shouldn't be part of the public
--- interface.
--- add_user() {{{
-function add_user(self, user, mode)
-    mode = mode or ''
-    self._members[user] = mode .. user
-end
--- }}}
-
--- remove_user() {{{
-function remove_user(self, user)
-    self._members[user] = nil
-end
--- }}}
-
--- change_status() {{{
-function change_status(self, user, on, mode)
-    if on then
-        if mode == 'o' then
-            self._members[user] = '@' .. user
-        elseif mode == 'v' then
-            self._members[user] = '+' .. user
-        end
-    else
-        if (mode == 'o' and self._members[user]:sub(1, 1) == '@') or
-           (mode == 'v' and self._members[user]:sub(1, 1) == '+') then
-            self._members[user] = user
-        end
-    end
-end
--- }}}
-
--- change_nick {{{
-function change_nick(self, old_nick, new_nick)
-    for member in self:each_member() do
-        local member_nick = member:gsub('@+', '')
-        if member_nick == old_nick then
-            local mode = self._members[old_nick]:sub(1, 1)
-            if mode ~= '@' and mode ~= '+' then mode = "" end
-            self._members[old_nick] = nil
-            self._members[new_nick] = mode .. new_nick
-            break
-        end
-    end
 end
 -- }}}
 -- }}}
