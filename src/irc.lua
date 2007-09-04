@@ -241,7 +241,7 @@ function handlers.on_privmsg(from, to, msg)
             if base.type(ctcp_handlers[cb]) == "function" then
                 ctcp_handlers[cb](from, to, table.concat(words, " "))
             else
-                notice(from, c("ERRMSG", "Unknown query: " .. received_command))
+                notice(from, c("ERRMSG", received_command, ":Unknown query"))
             end
             -- }}}
         else
@@ -525,7 +525,7 @@ end
 
 -- on_errmsg {{{
 function ctcp_handlers.on_errmsg(from, to, message)
-    notice(from, c("ERRMSG", message .. "No error has occurred"))
+    notice(from, c("ERRMSG", message, ":No error has occurred"))
 end
 -- }}}
 
