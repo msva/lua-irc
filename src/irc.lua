@@ -45,6 +45,7 @@ local icallbacks = {
 local requestinfo = {whois = {}}
 local handlers = {}
 local ctcp_handlers = {}
+local user_handlers = {}
 local serverinfo = {}
 local ip = nil
 -- }}}
@@ -106,6 +107,12 @@ local function incoming_message(sock)
     return true
 end
 -- }}}
+
+-- callback {{{
+local function callback(name, ...)
+    misc._try_call(user_handlers[name], ...)
+end
+-- }}}
 -- }}}
 
 -- internal message handlers {{{
@@ -115,7 +122,7 @@ function handlers.on_nick(from, new_nick)
     for chan in channels() do
         chan:_change_nick(from, new_nick)
     end
-    misc._try_call(on_nick_change, new_nick, from)
+    callback("nick_change", new_nick, from)
 end
 -- }}}
 
@@ -125,7 +132,7 @@ function handlers.on_join(from, chan)
                 "Received join message for unknown channel: " .. chan)
     if serverinfo.channels[chan].join_complete then
         serverinfo.channels[chan]:_add_user(from)
-        misc._try_call(on_join, serverinfo.channels[chan], from)
+        callback("join", serverinfo.channels[chan], from)
     end
 end
 -- }}}
@@ -137,7 +144,7 @@ function handlers.on_part(from, chan, part_msg)
     if not serverinfo.channels[chan] then return end
     if serverinfo.channels[chan].join_complete then
         serverinfo.channels[chan]:_remove_user(from)
-        misc._try_call(on_part, serverinfo.channels[chan], from, part_msg)
+        callback("part", serverinfo.channels[chan], from, part_msg)
     end
 end
 -- }}}
@@ -161,14 +168,14 @@ function handlers.on_mode(from, to, mode_string, ...)
             -- information request commands
             if mode == "o" then -- channel op {{{
                 chan:_change_status(target, dir == "+", "o")
-                misc._try_call(({["+"] = on_op, ["-"] = on_deop})[dir],
-                               chan, from, target)
+                callback(({["+"] = "op", ["-"] = "deop"})[dir],
+                         chan, from, target)
                 ind = ind + 1
                 -- }}}
             elseif mode == "v" then -- voice {{{
                 chan:_change_status(target, dir == "+", "v")
-                misc._try_call(({["+"] = on_voice, ["-"] = on_devoice})[dir],
-                               chan, from, target)
+                callback(({["+"] = "voice", ["-"] = "devoice"})[dir],
+                         chan, from, target)
                 ind = ind + 1
                 -- }}}
             end
@@ -203,14 +210,14 @@ function handlers.on_topic(from, chan, new_topic)
     serverinfo.channels[chan]._topic.user = (misc.parse_user(from))
     serverinfo.channels[chan]._topic.time = os.time()
     if serverinfo.channels[chan].join_complete then
-        misc._try_call(on_topic_change, serverinfo.channels[chan])
+        callback("topic_change", serverinfo.channels[chan])
     end
 end
 -- }}}
 
 -- on_invite {{{
 function handlers.on_invite(from, to, chan)
-    misc._try_call(on_invite, from, chan)
+    callback("invite", from, chan)
 end
 -- }}}
 
@@ -220,7 +227,7 @@ function handlers.on_kick(from, chan, to)
                 "Received kick message for unknown channel: " .. chan)
     if serverinfo.channels[chan].join_complete then
         serverinfo.channels[chan]:_remove_user(to)
-        misc._try_call(on_kick, serverinfo.channels[chan], to, from)
+        callback("kick", serverinfo.channels[chan], to, from)
     end
 end
 -- }}}
@@ -249,10 +256,9 @@ function handlers.on_privmsg(from, to, msg)
             if to:sub(1, 1) == "#" then
                 base.assert(serverinfo.channels[to],
                             "Received channel msg from unknown channel: " .. to)
-                misc._try_call(on_channel_msg, serverinfo.channels[to], from,
-                                               msg)
+                callback("channel_msg", serverinfo.channels[to], from, msg)
             else
-                misc._try_call(on_private_msg, from, msg)
+                callback("private_msg", from, msg)
             end
             -- }}}
         end
@@ -279,10 +285,9 @@ function handlers.on_notice(from, to, msg)
             if to:sub(1, 1) == "#" then
                 base.assert(serverinfo.channels[to],
                             "Received channel msg from unknown channel: " .. to)
-                misc._try_call(on_channel_notice, serverinfo.channels[to],
-                               from, msg)
+                callback("channel_notice", serverinfo.channels[to], from, msg)
             else
-                misc._try_call(on_private_notice, from, msg)
+                callback("private_notice", from, msg)
             end
             -- }}}
         end
@@ -295,7 +300,7 @@ function handlers.on_quit(from, quit_msg)
     for name, chan in base.pairs(serverinfo.channels) do
         chan:_remove_user(from)
     end
-    misc._try_call(on_quit, from, quit_msg)
+    callback("quit", from, quit_msg)
 end
 -- }}}
 
@@ -360,7 +365,7 @@ function handlers.on_rpl_endofnames(from, chan)
     base.assert(serverinfo.channels[chan],
                 "Received user information about unknown channel: " .. chan)
     if not serverinfo.channels[chan].join_complete then
-        misc._try_call(on_me_join, serverinfo.channels[chan])
+        callback("me_join", serverinfo.channels[chan])
         serverinfo.channels[chan].join_complete = true
     end
 end
@@ -399,7 +404,7 @@ function handlers.on_rpl_endofmotd(from)
     if not serverinfo.connected then
         serverinfo.connected = true
         serverinfo.connecting = false
-        misc._try_call(on_connect)
+        callback("connect")
     end
 end
 -- }}}
@@ -494,10 +499,10 @@ end
 function ctcp_handlers.on_action(from, to, message)
     if to:sub(1, 1) == "#" then
         base.assert(serverinfo.channels[to],
-        "Received channel msg from unknown channel: " .. to)
-        misc._try_call(on_channel_act, serverinfo.channels[to], from, message)
+                    "Received channel msg from unknown channel: " .. to)
+        callback("channel_act", serverinfo.channels[to], from, message)
     else
-        misc._try_call(on_private_act, from, message)
+        callback("private_act", from, message)
     end
 end
 -- }}}
@@ -508,7 +513,7 @@ end
 function ctcp_handlers.on_dcc(from, to, message)
     local type, argument, address, port, size = base.unpack(misc._split(message, " ", nil, '"', '"'))
     if type == "SEND" then
-        if misc._try_call(on_dcc, from, to, argument, address, port, size) then
+        if callback("dcc", from, to, argument, address, port, size) then
             dcc._accept(argument, address, port)
         end
     elseif type == "CHAT" then
@@ -898,6 +903,23 @@ function ctcp_version(cb, nick)
     else
         table.insert(icallbacks.ctcp_version[nick], cb)
     end
+end
+-- }}}
+-- }}}
+
+-- callback functions {{{
+-- register_callback {{{
+---
+-- Register a user function to be called when a specific event occurs.
+-- @param name Name of the event
+-- @param fn   Function to call when the event occurs, or nil to clear the
+--             callback for this event
+-- @return Value of the original callback for this event (or nil if no previous
+--         callback had been set)
+function register_callback(name, fn)
+    local old_handler = user_handlers[name]
+    user_handlers[name] = fn
+    return old_handler
 end
 -- }}}
 -- }}}
