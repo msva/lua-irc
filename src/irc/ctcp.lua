@@ -71,13 +71,17 @@ end
 -- }}}
 
 -- _ctcp_split {{{
--- TODO: again with this string/table thing... it's ugly!
 --
 -- Splits a low level dequoted string into normal text and unquoted CTCP
 -- messages.
 -- @param str Low level dequoted string
--- @return Array, where string values correspond to plain text, and table
---         values have t[1] as the CTCP message
+-- @return Array of tables, with each entry in the array corresponding to one
+--         part of the split message. These tables will have these fields:
+--         <ul>
+--         <li><i>str:</i>  The text of the split section</li>
+--         <li><i>ctcp:</i> True if the section was a CTCP message, false
+--                          otherwise</li>
+--         </ul>
 function _ctcp_split(str)
     local ret = {}
     local iter = 1
@@ -93,11 +97,11 @@ function _ctcp_split(str)
         end
 
         if plain_string ~= "" then
-            table.insert(ret, plain_string)
+            table.insert(ret, {str = plain_string, ctcp = false})
         end
         if not s then break end
         if ctcp_string ~= "" then
-            table.insert(ret, {_ctcp_dequote(ctcp_string)})
+            table.insert(ret, {str = _ctcp_dequote(ctcp_string), ctcp = true})
         end
 
         iter = e + 1

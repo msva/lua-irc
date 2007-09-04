@@ -227,19 +227,10 @@ end
 function handlers.on_privmsg(from, to, msg)
     local msgs = ctcp._ctcp_split(msg)
     for _, v in base.ipairs(msgs) do
-        if base.type(v) == "string" then
-            -- normal message {{{
-            if to:sub(1, 1) == "#" then
-                base.assert(serverinfo.channels[to],
-                            "Received channel msg from unknown channel: " .. to)
-                misc._try_call(on_channel_msg, serverinfo.channels[to], from, v)
-            else
-                misc._try_call(on_private_msg, from, v)
-            end
-            -- }}}
-        elseif base.type(v) == "table" then
+        local msg = v.str
+        if v.ctcp then
             -- ctcp message {{{
-            local words = misc._split(v[1])
+            local words = misc._split(msg)
             local received_command = words[1]
             local cb = "on_" .. received_command:lower()
             table.remove(words, 1)
@@ -251,6 +242,17 @@ function handlers.on_privmsg(from, to, msg)
                 notice(from, {"ERRMSG Unknown query: " .. received_command})
             end
             -- }}}
+        else
+            -- normal message {{{
+            if to:sub(1, 1) == "#" then
+                base.assert(serverinfo.channels[to],
+                            "Received channel msg from unknown channel: " .. to)
+                misc._try_call(on_channel_msg, serverinfo.channels[to], from,
+                                               msg)
+            else
+                misc._try_call(on_private_msg, from, msg)
+            end
+            -- }}}
         end
     end
 end
@@ -260,25 +262,26 @@ end
 function handlers.on_notice(from, to, msg)
     local msgs = ctcp._ctcp_split(msg)
     for _, v in base.ipairs(msgs) do
-        if base.type(v) == "string" then
-            -- normal message {{{
-            if to:sub(1, 1) == "#" then
-                base.assert(serverinfo.channels[to],
-                            "Received channel msg from unknown channel: " .. to)
-                misc._try_call(on_channel_notice, serverinfo.channels[to],
-                               from, v)
-            else
-                misc._try_call(on_private_notice, from, v)
-            end
-            -- }}}
-        elseif base.type(v) == "table" then
+        local msg = v.str
+        if v.ctcp then
             -- ctcp message {{{
-            local words = misc._split(v[1])
+            local words = misc._split(msg)
             local command = words[1]:lower()
             table.remove(words, 1)
             misc._try_call_warn("Unknown CTCP message: " .. command,
                                 ctcp_handlers["on_rpl_"..command], from, to,
                                 table.concat(words, ' '))
+            -- }}}
+        else
+            -- normal message {{{
+            if to:sub(1, 1) == "#" then
+                base.assert(serverinfo.channels[to],
+                            "Received channel msg from unknown channel: " .. to)
+                misc._try_call(on_channel_notice, serverinfo.channels[to],
+                               from, msg)
+            else
+                misc._try_call(on_private_notice, from, msg)
+            end
             -- }}}
         end
     end
