@@ -84,8 +84,8 @@ local function handle_connect(ssock, file, packet_size)
     ssock:close()
     irc._unregister_socket(ssock, 'r')
     irc._register_socket(sock, 'w',
-                         coroutine.wrap(function(sock)
-                             return send_file(sock, file, packet_size)
+                         coroutine.wrap(function(s)
+                             return send_file(s, file, packet_size)
                          end))
     return true
 end
@@ -133,8 +133,8 @@ function _accept(filename, address, port, packet_size)
     sock:settimeout(0.1)
     local file = base.assert(io.open(misc._get_unique_filename(filename), "w"))
     irc._register_socket(sock, 'r',
-                         coroutine.wrap(function(sock)
-                             return accept_file(sock, file, packet_size)
+                         coroutine.wrap(function(s)
+                             return accept_file(s, file, packet_size)
                          end))
 end
 -- }}}
@@ -164,8 +164,8 @@ function send(nick, filename, port)
     local size = file:seek("end")
     file:seek("set")
     irc._register_socket(sock, 'r',
-                         coroutine.wrap(function(sock)
-                             return handle_connect(sock, file)
+                         coroutine.wrap(function(s)
+                             return handle_connect(s, file)
                          end))
     filename = misc._basename(filename)
     if filename:find(" ") then filename = '"' .. filename .. '"' end
