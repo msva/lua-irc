@@ -39,12 +39,25 @@ local function send_file(sock, file, packet_size)
         bytes = bytes + packet:len()
         local index = 1
         while true do
+            local skip = false
             sock:send(packet, index)
-            local new_bytes = misc._int_to_str(sock:receive(4))
-            if new_bytes ~= bytes then
-                index = packet_size - bytes + new_bytes + 1
+            local new_bytes, err = sock:receive(4)
+            if not new_bytes then
+                if err == "timeout" then
+                    skip = true
+                else
+                    irc_debug._warn(err)
+                    break
+                end
             else
-                break
+                new_bytes = misc._int_to_str(new_bytes)
+            end
+            if not skip then
+                if new_bytes ~= bytes then
+                    index = packet_size - bytes + new_bytes + 1
+                else
+                    break
+                end
             end
         end
         coroutine.yield(true)
