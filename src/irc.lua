@@ -111,9 +111,9 @@ end
 -- on_nick {{{
 function handlers.on_nick(from, new_nick)
     for chan in channels() do
-        chan:change_nick(from, new_nick)
+        chan:_change_nick(from, new_nick)
     end
-    misc.try_call(on_nick_change, new_nick, from)
+    misc._try_call(on_nick_change, new_nick, from)
 end
 -- }}}
 
@@ -122,8 +122,8 @@ function handlers.on_join(from, chan)
     base.assert(serverinfo.channels[chan],
                 "Received join message for unknown channel: " .. chan)
     if serverinfo.channels[chan].join_complete then
-        serverinfo.channels[chan]:add_user(from)
-        misc.try_call(on_join, serverinfo.channels[chan], from)
+        serverinfo.channels[chan]:_add_user(from)
+        misc._try_call(on_join, serverinfo.channels[chan], from)
     end
 end
 -- }}}
@@ -134,8 +134,8 @@ function handlers.on_part(from, chan, part_msg)
     -- after we remove the channel from the channel list
     if not serverinfo.channels[chan] then return end
     if serverinfo.channels[chan].join_complete then
-        serverinfo.channels[chan]:remove_user(from)
-        misc.try_call(on_part, serverinfo.channels[chan], from, part_msg)
+        serverinfo.channels[chan]:_remove_user(from)
+        misc._try_call(on_part, serverinfo.channels[chan], from, part_msg)
     end
 end
 -- }}}
@@ -158,15 +158,15 @@ function handlers.on_mode(from, to, mode_string, ...)
             -- channel modes other than op/voice will be implemented as
             -- information request commands
             if mode == "o" then -- channel op {{{
-                chan:change_status(target, dir == "+", "o")
-                misc.try_call(({["+"] = on_op, ["-"] = on_deop})[dir],
-                              chan, from, target)
+                chan:_change_status(target, dir == "+", "o")
+                misc._try_call(({["+"] = on_op, ["-"] = on_deop})[dir],
+                               chan, from, target)
                 ind = ind + 1
                 -- }}}
             elseif mode == "v" then -- voice {{{
-                chan:change_status(target, dir == "+", "v")
-                misc.try_call(({["+"] = on_voice, ["-"] = on_devoice})[dir],
-                              chan, from, target)
+                chan:_change_status(target, dir == "+", "v")
+                misc._try_call(({["+"] = on_voice, ["-"] = on_devoice})[dir],
+                               chan, from, target)
                 ind = ind + 1
                 -- }}}
             end
@@ -201,14 +201,14 @@ function handlers.on_topic(from, chan, new_topic)
     serverinfo.channels[chan]._topic.user = (misc.parse_user(from))
     serverinfo.channels[chan]._topic.time = os.time()
     if serverinfo.channels[chan].join_complete then
-        misc.try_call(on_topic_change, serverinfo.channels[chan])
+        misc._try_call(on_topic_change, serverinfo.channels[chan])
     end
 end
 -- }}}
 
 -- on_invite {{{
 function handlers.on_invite(from, to, chan)
-    misc.try_call(on_invite, from, chan)
+    misc._try_call(on_invite, from, chan)
 end
 -- }}}
 
@@ -217,29 +217,29 @@ function handlers.on_kick(from, chan, to)
     base.assert(serverinfo.channels[chan],
                 "Received kick message for unknown channel: " .. chan)
     if serverinfo.channels[chan].join_complete then
-        serverinfo.channels[chan]:remove_user(to)
-        misc.try_call(on_kick, serverinfo.channels[chan], to, from)
+        serverinfo.channels[chan]:_remove_user(to)
+        misc._try_call(on_kick, serverinfo.channels[chan], to, from)
     end
 end
 -- }}}
 
 -- on_privmsg {{{
 function handlers.on_privmsg(from, to, msg)
-    local msgs = ctcp.ctcp_split(msg, true)
+    local msgs = ctcp._ctcp_split(msg, true)
     for _, v in base.ipairs(msgs) do
         if base.type(v) == "string" then
             -- normal message {{{
             if to:sub(1, 1) == "#" then
                 base.assert(serverinfo.channels[to],
                             "Received channel msg from unknown channel: " .. to)
-                misc.try_call(on_channel_msg, serverinfo.channels[to], from, v)
+                misc._try_call(on_channel_msg, serverinfo.channels[to], from, v)
             else
-                misc.try_call(on_private_msg, from, v)
+                misc._try_call(on_private_msg, from, v)
             end
             -- }}}
         elseif base.type(v) == "table" then
             -- ctcp message {{{
-            local words = misc.split(v[1])
+            local words = misc._split(v[1])
             local received_command = words[1]
             local cb = "on_" .. received_command:lower()
             table.remove(words, 1)
@@ -258,27 +258,27 @@ end
 
 -- on_notice {{{
 function handlers.on_notice(from, to, msg)
-    local msgs = ctcp.ctcp_split(msg, true)
+    local msgs = ctcp._ctcp_split(msg, true)
     for _, v in base.ipairs(msgs) do
         if base.type(v) == "string" then
             -- normal message {{{
             if to:sub(1, 1) == "#" then
                 base.assert(serverinfo.channels[to],
                             "Received channel msg from unknown channel: " .. to)
-                misc.try_call(on_channel_notice, serverinfo.channels[to],
-                              from, v)
+                misc._try_call(on_channel_notice, serverinfo.channels[to],
+                               from, v)
             else
-                misc.try_call(on_private_notice, from, v)
+                misc._try_call(on_private_notice, from, v)
             end
             -- }}}
         elseif base.type(v) == "table" then
             -- ctcp message {{{
-            local words = misc.split(v[1])
+            local words = misc._split(v[1])
             local command = words[1]:lower()
             table.remove(words, 1)
-            misc.try_call_warn("Unknown CTCP message: " .. command,
-                               ctcp_handlers["on_rpl_"..command], from, to,
-                               table.concat(words, ' '))
+            misc._try_call_warn("Unknown CTCP message: " .. command,
+                                ctcp_handlers["on_rpl_"..command], from, to,
+                                table.concat(words, ' '))
             -- }}}
         end
     end
@@ -288,9 +288,9 @@ end
 -- on_quit {{{
 function handlers.on_quit(from, quit_msg)
     for name, chan in base.pairs(serverinfo.channels) do
-        chan:remove_user(from)
+        chan:_remove_user(from)
     end
-    misc.try_call(on_quit, from, quit_msg)
+    misc._try_call(on_quit, from, quit_msg)
 end
 -- }}}
 
