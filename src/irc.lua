@@ -401,10 +401,11 @@ end
 
 -- on_rpl_whoisuser {{{
 function handlers.on_rpl_whoisuser(from, nick, user, host, star, realname)
-    nick = nick:lower()
-    requestinfo.whois[nick].user = user
-    requestinfo.whois[nick].host = host
-    requestinfo.whois[nick].realname = realname
+    local lnick = nick:lower()
+    requestinfo.whois[lnick].nick = nick
+    requestinfo.whois[lnick].user = user
+    requestinfo.whois[lnick].host = host
+    requestinfo.whois[lnick].realname = realname
 end
 -- }}}
 
@@ -544,10 +545,11 @@ ctcp_handlers.on_rpl_action = ctcp_handlers.on_action
 
 -- on_rpl_version {{{
 function ctcp_handlers.on_rpl_version(from, to, version)
-    local cb = table.remove(icallbacks.ctcp_version[from], 1)
+    local lfrom = from:lower()
+    local cb = table.remove(icallbacks.ctcp_version[lfrom], 1)
     cb({version = version, nick = from})
-    if #icallbacks.ctcp_version[from] > 0 then say(from, {"VERSION"})
-    else icallbacks.ctcp_version[from] = nil
+    if #icallbacks.ctcp_version[lfrom] > 0 then say(from, {"VERSION"})
+    else icallbacks.ctcp_version[lfrom] = nil
     end
 end
 -- }}}
@@ -560,20 +562,22 @@ end
 
 -- on_rpl_ping {{{
 function ctcp_handlers.on_rpl_ping(from, to, timestamp)
-    local cb = table.remove(icallbacks.ctcp_ping[from], 1)
+    local lfrom = from:lower()
+    local cb = table.remove(icallbacks.ctcp_ping[lfrom], 1)
     cb({time = os.time() - timestamp, nick = from})
-    if #icallbacks.ctcp_ping[from] > 0 then say(from, {"PING " .. os.time()})
-    else icallbacks.ctcp_ping[from] = nil
+    if #icallbacks.ctcp_ping[lfrom] > 0 then say(from, {"PING " .. os.time()})
+    else icallbacks.ctcp_ping[lfrom] = nil
     end
 end
 -- }}}
 
 -- on_rpl_time {{{
 function ctcp_handlers.on_rpl_time(from, to, time)
-    local cb = table.remove(icallbacks.ctcp_time[from], 1)
+    local lfrom = from:lower()
+    local cb = table.remove(icallbacks.ctcp_time[lfrom], 1)
     cb({time = time, nick = from})
-    if #icallbacks.ctcp_time[from] > 0 then say(from, {"TIME"})
-    else icallbacks.ctcp_time[from] = nil
+    if #icallbacks.ctcp_time[lfrom] > 0 then say(from, {"TIME"})
+    else icallbacks.ctcp_time[lfrom] = nil
     end
 end
 -- }}}
@@ -795,7 +799,7 @@ end
 -- @param nick User to request WHOIS information about
 function whois(cb, nick)
     nick = nick:lower()
-    requestinfo.whois[nick] = {nick = nick}
+    requestinfo.whois[nick] = {}
     if not icallbacks.whois[nick] then
         icallbacks.whois[nick] = {cb}
         send("WHOIS", nick)
