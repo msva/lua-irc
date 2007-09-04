@@ -55,7 +55,7 @@ end
 function message(msg_type, msg, color)
     if ON then
         local endcolor = ""
-        if COLOR and out_file == io.stdout then
+        if COLOR and outfile == io.stdout then
             color = color or "\027[1;30m"
             endcolor = "\027[0m"
         else
