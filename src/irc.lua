@@ -513,7 +513,7 @@ end
 function ctcp_handlers.on_dcc(from, to, message)
     local type, argument, address, port, size = base.unpack(misc._split(message, " ", nil, '"', '"'))
     if type == "SEND" then
-        if callback("dcc", from, to, argument, address, port, size) then
+        if callback("dcc_send", from, to, argument, address, port, size) then
             dcc._accept(argument, address, port)
         end
     elseif type == "CHAT" then

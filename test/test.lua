@@ -216,9 +216,9 @@ local function on_devoice(chan, from, nick)
 end
 irc.register_callback("devoice", on_devoice)
 
-local function on_dcc()
+local function on_dcc_send()
     return true
 end
-irc.register_callback("dcc", on_dcc)
+irc.register_callback("dcc_send", on_dcc_send)
 
 irc.connect{network = "irc.freenode.net", nick = "doylua", pass = "doylua"}
