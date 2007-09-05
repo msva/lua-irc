@@ -36,6 +36,14 @@ dist : $(VERSION).tar.gz
 $(VERSION).tar.gz : $(MAIN_LUA) $(MOD_LUAS) $(TEST_LUAS) doc Makefile README TODO LICENSE
 	@echo "Creating $(VERSION).tar.gz"
 	@mkdir $(VERSION)
-	@cp -r src test doc Makefile README TODO LICENSE $(VERSION)
+	@mkdir $(VERSION)/src
+	@cp $(MAIN_LUA) $(VERSION)/src
+	@mkdir $(VERSION)/src/irc
+	@cp $(MOD_LUAS) $(VERSION)/src/irc
+	@mkdir $(VERSION)/test
+	@cp $(TEST_LUAS) $(VERSION)/test
+	@mkdir $(VERSION)/doc
+	@cp -r doc/* $(VERSION)/doc
+	@cp Makefile README TODO LICENSE $(VERSION)
 	@tar czf $(VERSION).tar.gz $(VERSION)
 	@rm -rf $(VERSION)
