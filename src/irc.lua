@@ -512,6 +512,7 @@ end
 -- loaded?
 function ctcp_handlers.on_dcc(from, to, message)
     local type, argument, address, port, size = base.unpack(misc._split(message, " ", nil, '"', '"'))
+    address = misc._ip_int_to_str(address)
     if type == "SEND" then
         if callback("dcc_send", from, to, argument, address, port, size) then
             dcc._accept(argument, address, port)

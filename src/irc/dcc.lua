@@ -139,11 +139,10 @@ end
 -- @param port        Port to connect to at the remote user
 -- @param packet_size Size of the packets the remote user will be sending
 function _accept(filename, address, port, packet_size)
-    debug_dcc("Accepting a DCC SEND request from " ..
-              misc._ip_int_to_str(address) .. ":" .. port)
+    debug_dcc("Accepting a DCC SEND request from " ..  address .. ":" .. port)
     packet_size = packet_size or 1024
     local sock = base.assert(socket.tcp())
-    base.assert(sock:connect(misc._ip_int_to_str(address), port))
+    base.assert(sock:connect(address, port))
     sock:settimeout(0.1)
     local file = base.assert(io.open(misc._get_unique_filename(filename), "w"))
     irc._register_socket(sock, 'r',
