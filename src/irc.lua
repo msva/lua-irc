@@ -566,7 +566,7 @@ end
 
 -- on_rpl_errmsg {{{
 function ctcp_handlers.on_rpl_errmsg(from, to, message)
-    try_call(on_ctcp_error, from, to, message)
+    callback("ctcp_error", from, to, message)
 end
 -- }}}
 
