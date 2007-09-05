@@ -11,6 +11,7 @@ MOD_LUAS = src/irc/channel.lua \
            src/irc/message.lua \
            src/irc/misc.lua
 TEST_LUAS = test/test.lua
+DOC_LUAS = src/callbacks.luadoc
 VERSION = $(shell grep '^_VERSION =' $(MAIN_LUA) | sed "s/_VERSION = '\(.*\)'/\1/" | tr ' ' '-')
 
 build :
@@ -21,9 +22,9 @@ install :
 	mkdir -p $(MOD_DIR)
 	cp $(MOD_LUAS) $(MOD_DIR)
 
-doc : $(MAIN_LUA) $(MOD_LUAS)
+doc : $(MAIN_LUA) $(MOD_LUAS) $(DOC_LUAS)
 	mkdir -p $(DOC_DIR)
-	$(LUADOC) --nofiles -d $(DOC_DIR) $(MAIN_LUA) $(MOD_LUAS)
+	$(LUADOC) --nofiles -d $(DOC_DIR) $(MAIN_LUA) $(MOD_LUAS) $(DOC_LUAS)
 	@touch doc
 
 clean :

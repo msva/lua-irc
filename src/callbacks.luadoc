@@ -1,0 +1,168 @@
+---
+-- These are the callbacks that are available to register.
+module "callbacks"
+
+---
+-- This callback is triggered whenever a user performs a CTCP ACTION in a
+-- channel.
+-- @param channel Channel object for where the action was performed
+-- @param from    User who performed the action
+-- @param message The action which was performed
+function channel_act(channel, from, message)
+end
+
+---
+-- This callback is triggered whenever a user sends a message to a channel.
+-- @param channel Channel object for where the message was sent
+-- @param from    User who sent the message
+-- @param message The message which was sent
+function channel_msg(channel, from, message)
+end
+
+---
+-- This callback is triggered whenever a user sends a notice to a channel.
+-- @param channel Channel object for where the notice was sent
+-- @param from    User who sent the message
+-- @param message The notice which was sent
+function channel_notice(channel, from, message)
+end
+
+---
+-- This callback is triggered when the connection has completed.
+function connect()
+end
+
+---
+-- This callback is triggered when a CTCP command resulted in an error (for
+-- example, if the remote client doesn't implement that CTCP command).
+-- @param from    User who sent the error response
+-- @param to      Who the response was sent to (either you or a channel you are
+--                in)
+-- @param message A description of the error
+function ctcp_error(from, to, message)
+end
+
+---
+-- This callback is triggered when a user offers to send you a file using DCC
+-- SEND. It allows you to determine whether or not you want to accept the file.
+-- @param from     User offering the file
+-- @param to       User who is being offered the file (likely yourself)
+-- @param filename Name of the file being offered
+-- @param address  IP address of the user offering the file
+-- @param port     Port to connect to at that address
+-- @param filesize Size of the file being offered
+-- @return True to accept the file, false to reject it
+function dcc_send(from, to, filename, address, port, filesize)
+end
+
+---
+-- This callback is triggered whenever somebody loses ops.
+-- @param channel Channel object for where the user lost ops
+-- @param from    User who removed the ops
+-- @param to      User who lost ops
+function deop(channel, from, to)
+end
+
+---
+-- This callback is triggered whenever somebody loses voice.
+-- @param channel Channel object for where the user lost voice
+-- @param from    User who removed the voice
+-- @param to      User who lost voice
+function devoice(channel, from, to)
+end
+
+---
+-- This callback is triggered whenever an invite to a channel is received.
+-- @param from    User who sent the invite
+-- @param channel Channel name that the invite was to
+function invite(from, channel)
+end
+
+---
+-- This callback is triggered when a user joins a channel.
+-- @param channel Channel object for where there was a join
+-- @param from    User who joined
+function join(channel, from)
+end
+
+---
+-- This callback is triggered when a user is kicked from a channel.
+-- @param channel Channel object for where there was a kick
+-- @param to      User who was kicked
+-- @param from    User who did the kicking
+function kick(channel, to, from)
+end
+
+---
+-- This callback is triggered after a join() command completes.
+-- @param channel Channel object for the joined channel
+function me_join(channel)
+end
+
+---
+-- This callback is triggered when a user changes their nick.
+-- @param from     User who changed their nick
+-- @param old_nick The previous nick of that user
+function nick_change(from, old_nick)
+end
+
+---
+-- This callback is triggered when a user is opped.
+-- @param channel Channel object for where the user was opped
+-- @param from    User who gave the ops
+-- @param to      User who was opped
+function op(channel, from, to)
+end
+
+---
+-- This callback is triggered when a user leaves a channel.
+-- @param channel Channel object for where the part occurred
+-- @param from    User who left
+-- @param message Part message from the user
+function part(channel, from, message)
+end
+
+---
+-- This callback is triggered when a user sends a CTCP ACTION in a private
+-- message.
+-- @param from    User who sent the action
+-- @param message The action that was sent
+function private_act(from, message)
+end
+
+---
+-- This callback is triggered when a user sends a private message.
+-- @param from    User who sent the message
+-- @param message The message that was sent
+function private_msg(from, message)
+end
+
+---
+-- This callback is triggered when a user sends a private notice.
+-- @param from    User who sent the notice
+-- @param message The notice that was sent
+function private_notice(from, message)
+end
+
+---
+-- This callback is triggered when a user quits.
+-- @param from    User who quit
+-- @param message The user's quit message
+function quit(from, message)
+end
+
+---
+-- This callback is triggered when a user changes the topic in a channel. The
+-- contents of the topic can be seen in the <i>topic</i> field of the channel
+-- object.
+-- @param channel Channel object for where the topic was changed.
+function topic_change(channel)
+end
+
+---
+-- This callback is triggered when a user is voiced.
+-- @param channel Channel object for where the user was voiced
+-- @param from    User who gave the voice
+-- @param to      User who was voiced
+function voice(channel, from, to)
+end
