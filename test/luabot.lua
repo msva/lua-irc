@@ -65,7 +65,7 @@ local commands = {
         envs[from] = create_env()
     end,
     help = function(target, from, arg)
-        if not arg then
+        if arg == "" or not arg then
             irc.say(target, from .. ": Commands: !clear, !eval, !help")
         elseif arg == "eval" then
             irc.say(target, from .. ": Evaluates a Lua statement in your own persistent environment")
