@@ -1,5 +1,5 @@
-LUADOC = luadoc
-LUA_DIR = /usr/local/share/lua/5.1
+include Make.config
+
 MOD_DIR = $(LUA_DIR)/irc
 DOC_DIR = doc
 MAIN_LUA = src/irc.lua
