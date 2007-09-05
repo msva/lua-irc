@@ -10,7 +10,8 @@ MOD_LUAS = src/irc/channel.lua \
            src/irc/debug.lua \
            src/irc/message.lua \
            src/irc/misc.lua
-TEST_LUAS = test/test.lua
+TEST_LUAS = test/test.lua \
+            test/luabot.lua
 DOC_LUAS = src/callbacks.luadoc
 VERSION = $(shell grep '^_VERSION =' $(MAIN_LUA) | sed "s/_VERSION = '\(.*\)'/\1/" | tr ' ' '-')
 
