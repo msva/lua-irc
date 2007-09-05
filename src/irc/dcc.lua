@@ -170,6 +170,7 @@ function send(nick, filename, port)
         err, msg = sock:bind('*', port)
         port = port + 1
     until msg ~= "address already in use" and port <= LAST_PORT + 1
+    port = port - 1
     base.assert(err, msg)
     base.assert(sock:listen(1))
     local ip = misc._ip_str_to_int(irc.get_ip())
@@ -188,8 +189,8 @@ function send(nick, filename, port)
     filename = misc._basename(filename)
     if filename:find(" ") then filename = '"' .. filename .. '"' end
     debug_dcc("Offering " .. filename .. " to " .. nick .. " from " ..
-              irc.get_ip() .. ":" .. port - 1)
-    irc.send("PRIVMSG", nick, c("DCC", "SEND", filename, ip, port - 1, size))
+              irc.get_ip() .. ":" .. port)
+    irc.send("PRIVMSG", nick, c("DCC", "SEND", filename, ip, port, size))
 end
 -- }}}
 -- }}}
