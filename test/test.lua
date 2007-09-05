@@ -225,4 +225,4 @@ local function on_dcc_send()
 end
 irc.register_callback("dcc_send", on_dcc_send)
 
-irc.connect{network = "irc.freenode.net", nick = "doylua", pass = "doylua"}
+irc.connect{network = "irc.freenode.net", nick = "doylua"}
