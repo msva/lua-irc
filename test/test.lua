@@ -197,21 +197,25 @@ end
 irc.register_callback("private_act", on_private_act)
 
 local function on_op(chan, from, nick)
+    print(nick .. " was opped in " .. chan .. " by " .. from)
     print_state()
 end
 irc.register_callback("op", on_op)
 
 local function on_deop(chan, from, nick)
+    print(nick .. " was deopped in " .. chan .. " by " .. from)
     print_state()
 end
 irc.register_callback("deop", on_deop)
 
 local function on_voice(chan, from, nick)
+    print(nick .. " was voiced in " .. chan .. " by " .. from)
     print_state()
 end
 irc.register_callback("voice", on_voice)
 
 local function on_devoice(chan, from, nick)
+    print(nick .. " was devoiced in " .. chan .. " by " .. from)
     print_state()
 end
 irc.register_callback("devoice", on_devoice)
