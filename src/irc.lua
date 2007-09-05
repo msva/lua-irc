@@ -17,11 +17,11 @@ local table =     require 'table'
 
 ---
 -- LuaIRC - IRC framework written in Lua
--- @release 0.2
+-- @release 0.3
 module 'irc'
 
 -- constants {{{
-_VERSION = 'LuaIRC 0.2'
+_VERSION = 'LuaIRC 0.3'
 -- }}}
 
 -- classes {{{
