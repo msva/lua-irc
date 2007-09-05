@@ -103,7 +103,7 @@ local function incoming_message(sock)
     local msg = message._parse(raw_msg)
     misc._try_call_warn("Unhandled server message: " .. msg.command,
                         handlers["on_" .. msg.command:lower()],
-                        (misc.parse_user(msg.from)), base.unpack(msg.args))
+                        (misc._parse_user(msg.from)), base.unpack(msg.args))
     return true
 end
 -- }}}
@@ -207,7 +207,7 @@ function handlers.on_topic(from, chan, new_topic)
     base.assert(serverinfo.channels[chan],
                 "Received topic message for unknown channel: " .. chan)
     serverinfo.channels[chan]._topic.text = new_topic
-    serverinfo.channels[chan]._topic.user = (misc.parse_user(from))
+    serverinfo.channels[chan]._topic.user = from
     serverinfo.channels[chan]._topic.time = os.time()
     if serverinfo.channels[chan].join_complete then
         callback("topic_change", serverinfo.channels[chan])

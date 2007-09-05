@@ -273,17 +273,15 @@ function _value_iter(state, arg, pred)
     return val
 end
 -- }}}
--- }}}
 
--- public functions {{{
--- parse_user {{{
----
+-- _parse_user {{{
+--
 -- Gets the various parts of a full username.
 -- @param user A usermask (i.e. returned in the from field of a callback)
 -- @return nick
 -- @return username (if it exists)
 -- @return hostname (if it exists)
-function parse_user(user)
+function _parse_user(user)
     local found, bang, nick = user:find("^([^!]*)!")
     if found then
         user = user:sub(bang + 1)
