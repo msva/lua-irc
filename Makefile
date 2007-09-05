@@ -32,9 +32,9 @@ clean :
 
 dist : $(VERSION).tar.gz
 
-$(VERSION).tar.gz : $(MAIN_LUA) $(MOD_LUAS) $(TEST_LUAS) doc Makefile README TODO
+$(VERSION).tar.gz : $(MAIN_LUA) $(MOD_LUAS) $(TEST_LUAS) doc Makefile README TODO LICENSE
 	@echo "Creating $(VERSION).tar.gz"
 	@mkdir $(VERSION)
-	@cp -r src test doc Makefile README TODO $(VERSION)
+	@cp -r src test doc Makefile README TODO LICENSE $(VERSION)
 	@tar czf $(VERSION).tar.gz $(VERSION)
 	@rm -rf $(VERSION)
