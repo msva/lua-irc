@@ -4,38 +4,94 @@ local irc = require 'irc'
 irc.DEBUG = true
 
 local nick = "luabot"
-local pre_code = [[
-io = nil
-os = nil
-loadfile = nil
-dofile = nil
-package = nil
-require = nil
-module = nil
-debug = nil
-]]
+
+local envs = {}
+
+local function create_env()
+    return {
+        _VERSION =      _VERSION,
+        assert =         assert,
+        collectgarbage = collectgarbage,
+        error =          error,
+        getfenv =        getfenv,
+        getmetatable =   getmetatable,
+        ipairs =         ipairs,
+        loadstring =     loadstring,
+        next =           next,
+        pairs =          pairs,
+        pcall =          pcall,
+        rawequal =       rawequal,
+        rawget =         rawget,
+        rawset =         rawset,
+        select =         select,
+        setfenv =        setfenv,
+        setmetatable =   setmetatable,
+        tonumber =       tonumber,
+        tostring =       tostring,
+        type =           type,
+        unpack =         unpack,
+        xpcall =         xpcall,
+        coroutine =      coroutine,
+        math =           math,
+        string =         string,
+        table =          table,
+    }
+end
+
+local commands = {
+    eval = function(channel, from, code)
+        code = code:gsub("^=", "return ")
+        local fn, err = loadstring(code)
+        if not fn then
+            irc.say(channel.name, from .. ": Error loading code: " .. code .. err:match(".*(:.-)$"))
+            return
+        else
+            setfenv(fn, envs[from])
+            local result = {pcall(fn)}
+            local success = table.remove(result, 1)
+            if not success then
+                irc.say(channel.name, from .. ": Error running code: " .. code .. result[1]:match(".*(:.-)$"))
+            else
+                if result[1] == nil then
+                    irc.say(channel.name, from .. ": nil")
+                else
+                    irc.say(channel.name, from .. ": " .. table.concat(result, ", "))
+                end
+            end
+        end
+    end,
+    clear = function(channel, from)
+        irc.say(channel.name, from .. ": Clearing your environment")
+        envs[from] = create_env()
+    end,
+    help = function(channel, from, arg)
+        if not arg then
+            irc.say(channel.name, from .. ": Commands: !clear, !eval, !help")
+        elseif arg == "eval" then
+            irc.say(channel.name, from .. ": Evaluates a Lua statement in your own persistent environment")
+        elseif arg == "clear" then
+            irc.say(channel.name, from .. ": Clears your personal environment")
+        end
+    end
+}
 
 irc.register_callback("connect", function()
     irc.join("#doytest")
 end)
 
 irc.register_callback("channel_msg", function(channel, from, message)
-    local for_me, code = message:match("^(" .. nick .. ". )(.*)")
-    if for_me then
-        code = code:gsub("^=", "return ")
-        local fn, err = loadstring(pre_code .. code)
-        if not fn then
-            irc.say(channel.name, from .. ": Error loading code: " .. err)
-            return
-        else
-            local result = {pcall(fn)}
-            local success = table.remove(result, 1)
-            if not success then
-                irc.say(channel.name, from .. ": Error running code: " .. result[1])
-            else
-                irc.say(channel.name, from .. ": " .. table.concat(result, ", "))
-            end
-        end
+    message = message:gsub("^" .. nick .. "[:,>] ", "!eval ")
+    local is_cmd, cmd, arg = message:match("^(!)([%w_]+) ?(.-)$")
+    if is_cmd and commands[cmd] then
+        envs[from] = envs[from] or create_env()
+        commands[cmd](channel, from, arg)
+    end
+end)
+
+irc.register_callback("nick_change", function(from, old_nick)
+    if envs[old_nick] and not envs[from] then
+        envs[from] = envs[old_nick]
+        envs[old_nick] = nil
     end
 end)
 
