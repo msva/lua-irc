@@ -39,38 +39,38 @@ local function create_env()
 end
 
 local commands = {
-    eval = function(channel, from, code)
+    eval = function(target, from, code)
         code = code:gsub("^=", "return ")
         local fn, err = loadstring(code)
         if not fn then
-            irc.say(channel.name, from .. ": Error loading code: " .. code .. err:match(".*(:.-)$"))
+            irc.say(target, from .. ": Error loading code: " .. code .. err:match(".*(:.-)$"))
             return
         else
             setfenv(fn, envs[from])
             local result = {pcall(fn)}
             local success = table.remove(result, 1)
             if not success then
-                irc.say(channel.name, from .. ": Error running code: " .. code .. result[1]:match(".*(:.-)$"))
+                irc.say(target, from .. ": Error running code: " .. code .. result[1]:match(".*(:.-)$"))
             else
                 if result[1] == nil then
-                    irc.say(channel.name, from .. ": nil")
+                    irc.say(target, from .. ": nil")
                 else
-                    irc.say(channel.name, from .. ": " .. table.concat(result, ", "))
+                    irc.say(target, from .. ": " .. table.concat(result, ", "))
                 end
             end
         end
     end,
-    clear = function(channel, from)
-        irc.say(channel.name, from .. ": Clearing your environment")
+    clear = function(target, from)
+        irc.say(target, from .. ": Clearing your environment")
         envs[from] = create_env()
     end,
-    help = function(channel, from, arg)
+    help = function(target, from, arg)
         if not arg then
-            irc.say(channel.name, from .. ": Commands: !clear, !eval, !help")
+            irc.say(target, from .. ": Commands: !clear, !eval, !help")
         elseif arg == "eval" then
-            irc.say(channel.name, from .. ": Evaluates a Lua statement in your own persistent environment")
+            irc.say(target, from .. ": Evaluates a Lua statement in your own persistent environment")
         elseif arg == "clear" then
-            irc.say(channel.name, from .. ": Clears your personal environment")
+            irc.say(target, from .. ": Clears your personal environment")
         end
     end
 }
@@ -84,7 +84,18 @@ irc.register_callback("channel_msg", function(channel, from, message)
     local is_cmd, cmd, arg = message:match("^(!)([%w_]+) ?(.-)$")
     if is_cmd and commands[cmd] then
         envs[from] = envs[from] or create_env()
-        commands[cmd](channel, from, arg)
+        commands[cmd](channel.name, from, arg)
+    end
+end)
+
+irc.register_callback("private_msg", function(from, message)
+    message = message:gsub("^" .. nick .. "[:,>] ", "!eval ")
+    local is_cmd, cmd, arg = message:match("^(!)([%w_]+) ?(.-)$")
+    envs[from] = envs[from] or create_env()
+    if is_cmd and commands[cmd] then
+        commands[cmd](from, from, arg)
+    else
+        commands["eval"](from, from, message)
     end
 end)
 
