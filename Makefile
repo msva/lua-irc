@@ -12,6 +12,11 @@ MOD_LUAS = src/irc/channel.lua \
            src/irc/misc.lua
 TEST_LUAS = test/test.lua \
             test/luabot.lua
+OTHER_FILES = Makefile \
+	      Make.config \
+	      README \
+	      LICENSE \
+	      TODO
 DOC_LUAS = src/callbacks.luadoc
 VERSION = $(shell grep '^_VERSION =' $(MAIN_LUA) | sed "s/_VERSION = '\(.*\)'/\1/" | tr ' ' '-')
 
@@ -33,7 +38,7 @@ clean :
 
 dist : $(VERSION).tar.gz
 
-$(VERSION).tar.gz : $(MAIN_LUA) $(MOD_LUAS) $(TEST_LUAS) doc Makefile README TODO LICENSE
+$(VERSION).tar.gz : $(MAIN_LUA) $(MOD_LUAS) $(TEST_LUAS) doc $(OTHER_FILES)
 	@echo "Creating $(VERSION).tar.gz"
 	@mkdir $(VERSION)
 	@mkdir $(VERSION)/src
@@ -44,6 +49,6 @@ $(VERSION).tar.gz : $(MAIN_LUA) $(MOD_LUAS) $(TEST_LUAS) doc Makefile README TOD
 	@cp $(TEST_LUAS) $(VERSION)/test
 	@mkdir $(VERSION)/doc
 	@cp -r doc/* $(VERSION)/doc
-	@cp Makefile README TODO LICENSE $(VERSION)
+	@cp $(OTHER_FILES) $(VERSION)
 	@tar czf $(VERSION).tar.gz $(VERSION)
 	@rm -rf $(VERSION)
