@@ -4,6 +4,8 @@ local irc = require 'irc'
 irc.DEBUG = true
 
 local nick = "luabot"
+local channel = "#doytest"
+local network = "irc.freenode.org"
 
 local envs = {}
 
@@ -77,7 +79,7 @@ local commands = {
 }
 
 irc.register_callback("connect", function()
-    irc.join("#doytest")
+    irc.join(channel)
 end)
 
 irc.register_callback("channel_msg", function(channel, from, message)
@@ -107,4 +109,4 @@ irc.register_callback("nick_change", function(from, old_nick)
     end
 end)
 
-irc.connect{network = "irc.freenode.net", nick = nick}
+irc.connect{network = network, nick = nick}
