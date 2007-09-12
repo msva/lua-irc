@@ -55,6 +55,7 @@ local commands = {
                 if result[1] == nil then
                     irc.say(target, from .. ": nil")
                 else
+                    for i, v in ipairs(result) do result[i] = tostring(v) end
                     irc.say(target, from .. ": " .. table.concat(result, ", "))
                 end
             end
