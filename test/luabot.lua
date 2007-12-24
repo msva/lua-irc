@@ -1,5 +1,6 @@
 #!/usr/bin/env lua
 
+local sig = require 'signal'
 local irc = require 'irc'
 irc.DEBUG = true
 
@@ -49,10 +50,17 @@ local commands = {
             return
         else
             setfenv(fn, envs[from])
+            sig.signal("ALRM", error)
+            sig.alarm(5)
             local result = {pcall(fn)}
+            sig.alarm(0)
+            sig.signal("ALRM", "default")
             local success = table.remove(result, 1)
             if not success then
-                irc.say(target, from .. ": Error running code: " .. code .. result[1]:match(".*(:.-)$"))
+                local err = result[1]:match(".*: (.-)$")
+                if err == "ALRM" then err = "timed out" end
+                irc.say(target, from .. ": Error running code: " .. code ..
+                                        ": " .. err)
             else
                 if result[1] == nil then
                     irc.say(target, from .. ": nil")
