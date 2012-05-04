@@ -1,4 +1,5 @@
 LuaIRC v0.3
+Vadim A. Misbakh-Soloviov (mva[at]mva.name)
 Jesse Luehrs (jluehrs2@uiuc.edu)
 
 OVERVIEW
@@ -7,7 +8,8 @@ LuaIRC is a fully featured IRC framework written entirely in Lua. It provides an
 
 INSTALL
 =======
-This module requires LuaSocket (http://www.cs.princeton.edu/~diego/professional/luasocket/) and Lua 5.1. To install, modify the Make.config file with paths appropriate to your system and run 'make install'.
+This module requires LuaSocket ( https://github.com/msva/LuaSocket ) and Lua >=5.1 (or LuaJIT-2). To install, modify the Make.config file with paths appropriate to your system and run 'make install'.
+TODO: Fix makefile to understand configuraition options instead of Make.config
 
 DOCUMENTATION
 =============
@@ -26,6 +28,7 @@ CHANGES
 
 COPYRIGHT AND LICENSE
 =====================
+Copyright (C) 2012 Vadim A. Misbakh-Soloviov
 Copyright (C) 2007 Jesse Luehrs
 
 This code is distributed under the MIT license; a copy is in the LICENSE file distributed with the source.
