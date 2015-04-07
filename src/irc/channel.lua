@@ -131,6 +131,7 @@ end
 -- @param on   True if the mode is being set, false if it's being unset
 -- @param mode 'o' for op, 'v' for voice
 function _change_status(self, user, on, mode)
+    if not self._members[user] then return end
     if on then
         if mode == 'o' then
             self._members[user] = '@' .. user
