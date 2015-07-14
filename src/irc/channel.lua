@@ -343,6 +343,18 @@ function devoice(self, name)
 end
 -- }}}
 
+
+-- kick {{{
+---
+-- Kicks a user.
+-- @param self Channel object
+-- @param name User to kick
+-- @param reason Reason for kicking(optional)
+function kick(self, name)
+    irc.send("KICK", self.name, name, reason)
+end
+-- }}}
+
 -- op {{{
 ---
 -- Give a user ops on a channel.
